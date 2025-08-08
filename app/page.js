@@ -112,7 +112,11 @@ const Page = () => {
                   : ["Home", "Practice", "Pricing"].map((item) => (
                       <a
                         key={item}
-                        href={`/${item.toLowerCase().replace(" ", "-")}`}
+                        href={
+                          item === "Pricing"
+                            ? "/select-plan"
+                            : `/${item.toLowerCase().replace(" ", "-")}`
+                        }
                         className="inline-flex items-center px-1 pt-1 text-gray-700 hover:text-blue-600 transition-colors duration-200"
                       >
                         {item}
@@ -215,7 +219,11 @@ const Page = () => {
                 : ["Home", "Practice", "Pricing"].map((item) => (
                     <a
                       key={item}
-                      href={`/${item.toLowerCase().replace(" ", "-")}`}
+                      href={
+                        item === "Pricing"
+                          ? "/select-plan"
+                          : `/${item.toLowerCase().replace(" ", "-")}`
+                      }
                       className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
                     >
                       {item}
@@ -287,7 +295,7 @@ const Page = () => {
               </button>
               <button
                 className="border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-lg hover:bg-blue-50 transition-colors duration-300 text-lg font-medium"
-                onClick={() => (window.location.href = "/pricing")}
+                onClick={() => (window.location.href = "/select-plan")}
               >
                 View Pricing Plans
               </button>
@@ -331,9 +339,7 @@ const Page = () => {
                     </button>
                     <button
                       className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors duration-300 font-medium shadow-md"
-                      onClick={() =>
-                        (window.location.href = "/profile-management")
-                      }
+                      onClick={() => (window.location.href = "/select-plan")}
                     >
                       📋 Manage Plan
                     </button>

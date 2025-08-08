@@ -27,7 +27,7 @@ const UserSchema = new mongoose.Schema(
     },
     plan: {
       type: String,
-      enum: ["starter", "professional", "enterprise"],
+      enum: ["free", "starter", "weekly", "monthly"],
       default: null,
     },
     billingCycle: {

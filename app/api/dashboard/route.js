@@ -69,6 +69,33 @@ export async function GET(request) {
       skillsImproved: Math.min(Math.floor(totalInterviews / 2), 10), // Simple calculation
     };
 
+    // Format userStats for dashboard
+    const userStats = {
+      name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User",
+      plan: user.plan || "",
+      planPrice: "", // You can add pricing logic here later
+      avatar: "👨‍💼",
+      interviewsUsed: totalInterviews,
+      interviewsTotal:
+        user.plan === "free" ? 1 : user.plan === "starter" ? 5 : -1, // -1 for unlimited (weekly/monthly)
+      averageScore: stats.averageScore,
+      practiceHours: stats.totalPracticeHours,
+      skillsImproved: stats.skillsImproved,
+      trialActive: user.subscriptionStatus === "trial",
+      trialDaysLeft: user.trialEndsAt
+        ? Math.max(
+            0,
+            Math.ceil(
+              (new Date(user.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)
+            )
+          )
+        : 0,
+      nextBillingDate: "", // You can add billing logic here later
+      memberSince: user.createdAt
+        ? new Date(user.createdAt).toLocaleDateString()
+        : "",
+    };
+
     return Response.json({
       user: {
         id: user._id,
@@ -79,6 +106,7 @@ export async function GET(request) {
         subscriptionStatus: user.subscriptionStatus,
         trialEndsAt: user.trialEndsAt,
       },
+      userStats,
       stats,
       recentInterviews: interviews.slice(0, 3),
       upcomingInterviews,

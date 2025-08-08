@@ -134,7 +134,12 @@ const Dashboard = () => {
                     {userStats?.name || "User"}
                   </div>
                   <div className="text-blue-600">
-                    {userStats?.plan ? `${userStats.plan} Plan` : "No Plan"}
+                    {userStats?.plan
+                      ? `${
+                          userStats.plan.charAt(0).toUpperCase() +
+                          userStats.plan.slice(1)
+                        } Plan`
+                      : "No Plan"}
                   </div>
                 </div>
               </button>
@@ -171,16 +176,19 @@ const Dashboard = () => {
                     Interviews Left
                   </p>
                   <p className="text-3xl font-bold text-blue-600">
-                    {userStats?.plan === "Weekly" || userStats?.plan === "Monthly"
+                    {userStats?.plan === "weekly" ||
+                    userStats?.plan === "monthly"
                       ? "∞"
                       : Math.max(
                           0,
-                          (userStats?.interviewsTotal || 0) - (userStats?.interviewsUsed || 0)
+                          (userStats?.interviewsTotal || 0) -
+                            (userStats?.interviewsUsed || 0)
                         )}
                   </p>
                   <p className="text-xs text-gray-500">
                     Used: {userStats?.interviewsUsed || 0} /{" "}
-                    {userStats?.plan === "Weekly" || userStats?.plan === "Monthly"
+                    {userStats?.plan === "weekly" ||
+                    userStats?.plan === "monthly"
                       ? "∞"
                       : userStats?.interviewsTotal || 0}
                   </p>
@@ -247,7 +255,10 @@ const Dashboard = () => {
               </h2>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600 mb-1">
-                  {userStats?.plan || "No Plan"}
+                  {userStats?.plan
+                    ? userStats.plan.charAt(0).toUpperCase() +
+                      userStats.plan.slice(1)
+                    : "No Plan"}
                 </div>
                 <div className="text-sm text-gray-600 mb-2">
                   {userStats?.planPrice || ""}
@@ -266,7 +277,7 @@ const Dashboard = () => {
                 <div className="space-y-2">
                   <button
                     className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300 text-sm"
-                    onClick={() => (window.location.href = "/pricing")}
+                    onClick={() => (window.location.href = "/select-plan")}
                   >
                     Manage Plan
                   </button>

@@ -51,6 +51,11 @@ const InterviewSetupPage = () => {
           duration: data.preferences?.duration || 30,
           focus: data.preferences?.interviewTypes || [],
         }));
+      } else if (response.status === 404) {
+        // Profile doesn't exist yet, that's okay
+        console.log("No profile found, user can create one");
+      } else {
+        console.error("Error fetching profile:", response.status);
       }
     } catch (err) {
       console.error("Error fetching profile:", err);
