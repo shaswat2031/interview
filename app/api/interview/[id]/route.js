@@ -5,7 +5,7 @@ import dbConnect from "../../../lib/mongodb";
 
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Get token from header
     const authorization = request.headers.get("authorization");
