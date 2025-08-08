@@ -1,4 +1,4 @@
-import dbConnect from "../lib/mongodb.js";
+import dbConnect from "../lib/mongodb";
 import Plan from "../models/Plan.js";
 
 const seedPlans = async () => {
