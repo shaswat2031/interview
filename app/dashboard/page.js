@@ -49,12 +49,71 @@ const Dashboard = () => {
           setRecentInterviews(data.recentInterviews || []);
         } else if (response.status === 401) {
           localStorage.removeItem("token");
+          localStorage.removeItem("user");
           window.location.href = "/login";
         } else {
-          console.error("Failed to fetch dashboard data");
+          // More detailed error handling
+          const errorText = await response.text();
+          console.error("Dashboard API error:", response.status, errorText);
+
+          // Fallback to localStorage user data
+          const userData = JSON.parse(localStorage.getItem("user") || "{}");
+          if (userData) {
+            setUserStats({
+              name:
+                `${userData.firstName || ""} ${
+                  userData.lastName || ""
+                }`.trim() || "User",
+              plan: userData.plan || "",
+              planPrice: "",
+              avatar: "👨‍💼",
+              interviewsUsed: 0,
+              interviewsTotal:
+                userData.plan === "free"
+                  ? 1
+                  : userData.plan === "starter"
+                  ? 5
+                  : -1,
+              averageScore: 0,
+              practiceHours: 0,
+              skillsImproved: 0,
+              trialActive: userData.subscriptionStatus === "trial",
+              trialDaysLeft: 0,
+              nextBillingDate: "",
+              memberSince: "",
+            });
+          }
+          console.error("Failed to fetch dashboard data, using fallback data");
         }
       } catch (error) {
         console.error("Error fetching dashboard:", error);
+
+        // Fallback to localStorage user data
+        const userData = JSON.parse(localStorage.getItem("user") || "{}");
+        if (userData) {
+          setUserStats({
+            name:
+              `${userData.firstName || ""} ${userData.lastName || ""}`.trim() ||
+              "User",
+            plan: userData.plan || "",
+            planPrice: "",
+            avatar: "👨‍💼",
+            interviewsUsed: 0,
+            interviewsTotal:
+              userData.plan === "free"
+                ? 1
+                : userData.plan === "starter"
+                ? 5
+                : -1,
+            averageScore: 0,
+            practiceHours: 0,
+            skillsImproved: 0,
+            trialActive: userData.subscriptionStatus === "trial",
+            trialDaysLeft: 0,
+            nextBillingDate: "",
+            memberSince: "",
+          });
+        }
       } finally {
         setDashboardLoading(false);
       }

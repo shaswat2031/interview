@@ -3,7 +3,8 @@ require("dotenv").config({ path: ".env.local" });
 
 // MongoDB connection
 const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/interviewai";
+  process.env.MONGODB_URI ||
+  "mongodb+srv://prasadshaswat9265:prasadshaswat9265@cluster0.atgekgj.mongodb.net/interviewai?retryWrites=true&w=majority";
 
 // Plan Schema (inline for seeding)
 const planSchema = new mongoose.Schema(

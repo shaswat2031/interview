@@ -17,6 +17,7 @@ const ProfileSchema = new mongoose.Schema(
       type: String,
       required: [true, "Job profile is required"],
       trim: true,
+      default: "Software Engineer", // Add default value
     },
     experience: {
       level: {
@@ -28,14 +29,19 @@ const ProfileSchema = new mongoose.Schema(
           "Lead/Principal (8+ years)",
         ],
         required: true,
+        default: "Entry Level (0-2 years)", // Add default value
       },
       years: {
         type: Number,
         required: true,
         min: 0,
         max: 50,
+        default: 0, // Add default value
       },
-      description: String,
+      description: {
+        type: String,
+        default: "", // Add default value
+      },
     },
     techStack: {
       primary: [String], // Main technologies
@@ -49,6 +55,7 @@ const ProfileSchema = new mongoose.Schema(
       target: {
         type: String,
         required: [true, "Target job role is required"],
+        default: "Software Engineer", // Add default value
       },
       industry: {
         type: String,
@@ -63,6 +70,7 @@ const ProfileSchema = new mongoose.Schema(
           "Other",
         ],
         required: true,
+        default: "Technology", // Add default value
       },
       companySize: {
         type: String,

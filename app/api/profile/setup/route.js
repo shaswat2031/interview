@@ -88,10 +88,50 @@ export async function GET(request) {
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const profile = await Profile.findOne({ userId: decoded.userId });
+    let profile = await Profile.findOne({ userId: decoded.userId });
 
     if (!profile) {
-      return Response.json({ error: "Profile not found" }, { status: 404 });
+      // Get user info to create a basic profile
+      const user = await User.findById(decoded.userId);
+      if (!user) {
+        return Response.json({ error: "User not found" }, { status: 404 });
+      }
+
+      // Create a basic profile with default values
+      profile = new Profile({
+        userId: decoded.userId,
+        fullName: `${user.firstName} ${user.lastName}`,
+        jobProfile: "", // Will be filled by user
+        experience: {
+          level: "Entry Level (0-2 years)",
+          years: 0,
+          description: "",
+        },
+        techStack: {
+          primary: [],
+          secondary: [],
+          frameworks: [],
+          databases: [],
+          tools: [],
+        },
+        jobRole: {
+          current: "",
+          target: "",
+          industry: "Technology",
+          companySize: "Startup (1-50)",
+        },
+        preferences: {
+          interviewTypes: [],
+          difficulty: "Intermediate",
+          duration: 30,
+        },
+        strengths: [],
+        weaknesses: [],
+        goals: [],
+        isComplete: false,
+      });
+
+      await profile.save();
     }
 
     return Response.json(profile);

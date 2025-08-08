@@ -29,18 +29,37 @@ const Page = () => {
   // Save profile function
   const saveProfileData = async () => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please login first to save profile data");
+        return;
+      }
+
+      // Prepare profile data with required fields
+      const profileData = {
+        ...userProfile,
+        jobProfile:
+          userProfile.plan === "Starter Plan"
+            ? "Software Engineer"
+            : "Software Engineer",
+        firstName: userProfile.name.split(" ")[0],
+        lastName: userProfile.name.split(" ").slice(1).join(" "),
+      };
+
       const response = await fetch("/api/profile/save", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(userProfile),
+        body: JSON.stringify(profileData),
       });
 
       if (response.ok) {
         alert("✅ Profile saved successfully!");
       } else {
-        throw new Error("Failed to save profile");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save profile");
       }
     } catch (error) {
       console.error("Error saving profile:", error);
