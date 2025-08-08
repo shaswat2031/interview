@@ -15,15 +15,90 @@ const Page = () => {
     setIsLoggedIn(true);
   };
 
-  // User profile data (in real app, this would come from API/database)
-  const userProfile = {
-    name: "Prasad Shaswat",
-    plan: "Starter Plan",
-    avatar: "👨‍💼",
-    email: "prasadshaswat9265@gmail.com",
-    interviewsCompleted: 3,
-    interviewsRemaining: 2,
-    memberSince: "January 2025",
+  // Function to start template interview with pre-filled data
+  const startTemplateInterview = (templateType) => {
+    const templates = {
+      frontend: {
+        type: "Technical",
+        company: "Tech Startup",
+        jobTitle: "Frontend Developer",
+        difficulty: "Intermediate",
+        duration: 45,
+        focus: ["Problem Solving", "Technical Knowledge", "Code Quality"],
+        customRequirements:
+          "Focus on React, JavaScript, CSS, and modern frontend development practices",
+      },
+      software: {
+        type: "Technical",
+        company: "FAANG",
+        jobTitle: "Software Engineer",
+        difficulty: "Advanced",
+        duration: 60,
+        focus: [
+          "Data Structures",
+          "Algorithms",
+          "System Architecture",
+          "Problem Solving",
+        ],
+        customRequirements:
+          "Focus on data structures, algorithms, system design, and coding best practices",
+      },
+      product: {
+        type: "Behavioral",
+        company: "Fortune 500",
+        jobTitle: "Product Manager",
+        difficulty: "Intermediate",
+        duration: 30,
+        focus: ["Leadership", "Communication", "Project Management"],
+        customRequirements:
+          "Focus on product strategy, leadership skills, and stakeholder communication",
+      },
+      devops: {
+        type: "Technical",
+        company: "Cloud Company",
+        jobTitle: "DevOps Engineer",
+        difficulty: "Advanced",
+        duration: 50,
+        focus: [
+          "System Architecture",
+          "Technical Knowledge",
+          "Problem Solving",
+        ],
+        customRequirements:
+          "Focus on AWS, Docker, Kubernetes, CI/CD pipelines, and cloud infrastructure",
+      },
+      datascience: {
+        type: "Technical",
+        company: "Tech Giant",
+        jobTitle: "Data Scientist",
+        difficulty: "Advanced",
+        duration: 45,
+        focus: ["Technical Knowledge", "Problem Solving", "Data Structures"],
+        customRequirements:
+          "Focus on Python, machine learning, statistics, SQL, and data analysis",
+      },
+      ux: {
+        type: "Behavioral",
+        company: "Design Agency",
+        jobTitle: "UX Designer",
+        difficulty: "Intermediate",
+        duration: 40,
+        focus: ["Communication", "Problem Solving", "Team Collaboration"],
+        customRequirements:
+          "Focus on design thinking, prototyping, user research, and design processes",
+      },
+    };
+
+    const selectedTemplate = templates[templateType];
+    if (selectedTemplate) {
+      // Store template data in localStorage to be picked up by interview-setup page
+      localStorage.setItem(
+        "interviewTemplate",
+        JSON.stringify(selectedTemplate)
+      );
+      // Redirect to interview setup page
+      window.location.href = "/interview-setup";
+    }
   };
 
   // Save profile function
@@ -35,32 +110,8 @@ const Page = () => {
         return;
       }
 
-      // Prepare profile data with required fields
-      const profileData = {
-        ...userProfile,
-        jobProfile:
-          userProfile.plan === "Starter Plan"
-            ? "Software Engineer"
-            : "Software Engineer",
-        firstName: userProfile.name.split(" ")[0],
-        lastName: userProfile.name.split(" ").slice(1).join(" "),
-      };
-
-      const response = await fetch("/api/profile/save", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(profileData),
-      });
-
-      if (response.ok) {
-        alert("✅ Profile saved successfully!");
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save profile");
-      }
+      // This function is now a placeholder - profile data should come from actual user state
+      alert("⚠️ Profile data should be loaded from user authentication system");
     } catch (error) {
       console.error("Error saving profile:", error);
       alert("❌ Error saving profile. Please try again.");
@@ -105,26 +156,29 @@ const Page = () => {
       </Head>
 
       {/* Navigation */}
-      <nav className="bg-white shadow-sm sticky top-0 z-50">
+      <nav className="bg-white/95 backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center mr-2">
-                  <span className="text-white font-bold">I</span>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center mr-3 shadow-lg">
+                  <span className="text-white font-bold text-lg">I</span>
                 </div>
-                <h1 className="text-xl font-bold text-blue-600">InterviewAI</h1>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  InterviewAI
+                </h1>
               </div>
-              <div className="hidden md:ml-10 md:flex md:space-x-8">
+              <div className="hidden md:ml-12 md:flex md:space-x-10">
                 {isLoggedIn
                   ? ["Dashboard", "Practice", "Analytics", "Resources"].map(
                       (item) => (
                         <a
                           key={item}
                           href={`/${item.toLowerCase().replace(" ", "-")}`}
-                          className="inline-flex items-center px-1 pt-1 text-gray-700 hover:text-blue-600 transition-colors duration-200"
+                          className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-all duration-300 group"
                         >
                           {item}
+                          <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 group-hover:w-full transition-all duration-300"></span>
                         </a>
                       )
                     )
@@ -136,53 +190,60 @@ const Page = () => {
                             ? "/select-plan"
                             : `/${item.toLowerCase().replace(" ", "-")}`
                         }
-                        className="inline-flex items-center px-1 pt-1 text-gray-700 hover:text-blue-600 transition-colors duration-200"
+                        className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-all duration-300 group"
                       >
                         {item}
+                        <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 group-hover:w-full transition-all duration-300"></span>
                       </a>
                     ))}
               </div>
             </div>
 
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-6">
               {isLoggedIn ? (
                 <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-lg">
-                    <span className="text-2xl">{userProfile.avatar}</span>
+                  <div className="flex items-center space-x-3 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300">
+                    <button
+                      className="text-2xl hover:scale-110 transition-transform duration-200 filter hover:brightness-110"
+                      onClick={() =>
+                        (window.location.href = "/profile-management")
+                      }
+                      title="View Profile"
+                    >
+                      👨‍💼
+                    </button>
                     <div className="text-sm">
-                      <div className="font-medium text-gray-900">
-                        {userProfile.name}
+                      <div className="font-semibold text-gray-900">
+                        John Doe
                       </div>
-                      <div className="text-blue-600">{userProfile.plan}</div>
+                      <div className="text-blue-600 font-medium">Pro Plan</div>
                     </div>
                   </div>
                   <button
-                    className="text-gray-700 hover:text-blue-600 transition-colors duration-200"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
                     onClick={() => setIsLoggedIn(false)}
                   >
                     Sign Out
                   </button>
                 </div>
               ) : (
-                <>
-                  <a
-                    href="/login"
-                    className="text-gray-700 hover:text-blue-600 transition-colors duration-200"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleLogin(); // Simulate login for demo
-                      // In real app: window.location.href = "/login"
-                    }}
+                <div className="flex items-center space-x-4">
+                  <button
+                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                    onClick={() => (window.location.href = "/login")}
+                    title="Sign In"
                   >
-                    Sign In
-                  </a>
+                    <span className="text-lg">👨‍💼</span>
+                    <span>Sign In</span>
+                  </button>
+
                   <a
                     href="/register"
-                    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium text-sm"
                   >
                     Get Started
                   </a>
-                </>
+                </div>
               )}
             </div>
 
@@ -253,14 +314,18 @@ const Page = () => {
                   {isLoggedIn ? (
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center space-x-2">
-                        <span className="text-2xl">{userProfile.avatar}</span>
+                        <button
+                          className="text-2xl hover:scale-110 transition-transform duration-200"
+                          onClick={() =>
+                            (window.location.href = "/profile-management")
+                          }
+                          title="View Profile"
+                        >
+                          👨‍💼
+                        </button>
                         <div className="text-sm">
-                          <div className="font-medium text-gray-900">
-                            {userProfile.name}
-                          </div>
-                          <div className="text-blue-600">
-                            {userProfile.plan}
-                          </div>
+                          <div className="font-medium text-gray-900">User</div>
+                          <div className="text-blue-600">Plan</div>
                         </div>
                       </div>
                       <button
@@ -272,6 +337,13 @@ const Page = () => {
                     </div>
                   ) : (
                     <>
+                      <button
+                        className="text-2xl hover:scale-110 transition-transform duration-200 mr-4"
+                        onClick={() => (window.location.href = "/login")}
+                        title="Login to view profile"
+                      >
+                        👨‍💼
+                      </button>
                       <a
                         href="/login"
                         className="block text-base font-medium text-gray-700 hover:text-blue-600"
@@ -330,15 +402,13 @@ const Page = () => {
                 <div className="flex flex-col md:flex-row items-center justify-between mb-8">
                   <div className="flex items-center space-x-4 mb-4 md:mb-0">
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-3xl">
-                      {userProfile.avatar}
+                      👨‍💼
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900">
-                        Welcome back, {userProfile.name}!
+                        Welcome back!
                       </h2>
-                      <p className="text-gray-600">
-                        Member since {userProfile.memberSince}
-                      </p>
+                      <p className="text-gray-600">Member since January 2025</p>
                     </div>
                   </div>
                   <div className="flex space-x-4">
@@ -372,11 +442,9 @@ const Page = () => {
                       Current Plan
                     </h3>
                     <p className="text-2xl font-bold text-blue-700">
-                      {userProfile.plan}
+                      Starter Plan
                     </p>
-                    <p className="text-blue-600 mt-2">
-                      {userProfile.interviewsRemaining} interviews remaining
-                    </p>
+                    <p className="text-blue-600 mt-2">2 interviews remaining</p>
                     <button
                       className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-300 text-sm"
                       onClick={() => (window.location.href = "/select-plan")}
@@ -390,13 +458,11 @@ const Page = () => {
                     <h3 className="text-lg font-semibold text-green-900 mb-2">
                       Progress
                     </h3>
-                    <p className="text-2xl font-bold text-green-700">
-                      {userProfile.interviewsCompleted}
-                    </p>
-                    <p className="text-green-600 mt-2">Interviews completed</p>
+                    <p className="text-2xl font-bold text-green-700">3</p>
+                    <p className="o-green-600 mt-2">Interviews completed</p>
                     <button
-                      className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-300 text-sm"
-                      onClick={() => (window.location.href = "/analytics")}
+                      className="mt-n bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-300 text-sm"
+                      t
                     >
                       View Analytics
                     </button>
@@ -429,6 +495,277 @@ const Page = () => {
             </div>
           </section>
         )}
+
+        {/* Practice Templates Section */}
+        <section className="py-16 bg-gradient-to-br from-gray-50 to-blue-50 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Practice Templates
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Quick start your practice with our pre-built interview templates
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {/* Frontend Developer Template */}
+              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl">🌐</span>
+                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                    Intermediate
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Frontend Developer
+                </h3>
+                <p className="text-gray-600 mb-4">Tech Startup</p>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Technical</span>
+                    <span className="mx-2">•</span>
+                    <span>45 min</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {["React", "JavaScript", "CSS", "+1 more"].map(
+                      (skill, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs"
+                        >
+                          {skill}
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium"
+                  onClick={() => startTemplateInterview("frontend")}
+                >
+                  Start Practice
+                </button>
+              </div>
+
+              {/* Software Engineer Template */}
+              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl">⚙️</span>
+                  <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                    Advanced
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Software Engineer
+                </h3>
+                <p className="text-gray-600 mb-4">FAANG</p>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Technical</span>
+                    <span className="mx-2">•</span>
+                    <span>60 min</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {["Data Structures", "Algorithms", "System Design"].map(
+                      (skill, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs"
+                        >
+                          {skill}
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium"
+                  onClick={() => startTemplateInterview("software")}
+                >
+                  Start Practice
+                </button>
+              </div>
+
+              {/* Product Manager Template */}
+              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl">📊</span>
+                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                    Intermediate
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Product Manager
+                </h3>
+                <p className="text-gray-600 mb-4">Fortune 500</p>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Behavioral</span>
+                    <span className="mx-2">•</span>
+                    <span>30 min</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {["Leadership", "Strategy", "Communication"].map(
+                      (skill, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs"
+                        >
+                          {skill}
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium"
+                  onClick={() => startTemplateInterview("product")}
+                >
+                  Start Practice
+                </button>
+              </div>
+
+              {/* DevOps Engineer Template */}
+              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl">☁️</span>
+                  <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                    Advanced
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  DevOps Engineer
+                </h3>
+                <p className="text-gray-600 mb-4">Cloud Company</p>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Technical</span>
+                    <span className="mx-2">•</span>
+                    <span>50 min</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {["AWS", "Docker", "Kubernetes", "CI/CD"].map(
+                      (skill, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs"
+                        >
+                          {skill}
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium"
+                  onClick={() => startTemplateInterview("devops")}
+                >
+                  Start Practice
+                </button>
+              </div>
+
+              {/* Data Scientist Template */}
+              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl">🔬</span>
+                  <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                    Advanced
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Data Scientist
+                </h3>
+                <p className="text-gray-600 mb-4">Tech Giant</p>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Technical</span>
+                    <span className="mx-2">•</span>
+                    <span>45 min</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {["Python", "ML", "Statistics", "SQL"].map(
+                      (skill, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs"
+                        >
+                          {skill}
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium"
+                  onClick={() => startTemplateInterview("datascience")}
+                >
+                  Start Practice
+                </button>
+              </div>
+
+              {/* UX Designer Template */}
+              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl">🎨</span>
+                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                    Intermediate
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  UX Designer
+                </h3>
+                <p className="text-gray-600 mb-4">Design Agency</p>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="font-medium">Behavioral</span>
+                    <span className="mx-2">•</span>
+                    <span>40 min</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {["Design Thinking", "Prototyping", "User Research"].map(
+                      (skill, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs"
+                        >
+                          {skill}
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium"
+                  onClick={() => startTemplateInterview("ux")}
+                >
+                  Start Practice
+                </button>
+              </div>
+            </div>
+
+            <div className="text-center mt-12">
+              <button
+                className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-3 rounded-lg hover:bg-blue-50 transition-colors duration-300 font-medium"
+                onClick={() => (window.location.href = "/interview-setup")}
+              >
+                Create Custom Interview
+              </button>
+            </div>
+          </div>
+        </section>
 
         {/* Features Section */}
         <section className="py-16 bg-white px-4 sm:px-6 lg:px-8">

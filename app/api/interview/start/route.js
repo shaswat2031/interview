@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import Interview from "../../../../models/Interview";
 import User from "../../../../models/User";
+import Plan from "../../../../models/Plan";
 import dbConnect from "../../../lib/mongodb";
 
 export async function POST(request) {
@@ -28,6 +29,40 @@ export async function POST(request) {
     const user = await User.findById(decoded.userId).select("-password");
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check plan limits before creating interview
+    const totalInterviews = await Interview.countDocuments({
+      userId: user._id,
+    });
+
+    // Get plan limits
+    let maxInterviews;
+    if (user.plan === "free") {
+      maxInterviews = 1;
+    } else if (user.plan === "starter") {
+      maxInterviews = 5;
+    } else if (user.plan === "weekly" || user.plan === "monthly") {
+      maxInterviews = -1; // unlimited
+    } else {
+      // No plan assigned, default to free tier
+      maxInterviews = 1;
+    }
+
+    // Check if user has exceeded their plan limit
+    if (maxInterviews !== -1 && totalInterviews >= maxInterviews) {
+      return NextResponse.json(
+        {
+          error: `You have reached your plan limit of ${maxInterviews} interview${
+            maxInterviews === 1 ? "" : "s"
+          }. Please upgrade your plan to continue.`,
+          planLimit: true,
+          currentUsage: totalInterviews,
+          maxAllowed: maxInterviews,
+          userPlan: user.plan || "free",
+        },
+        { status: 403 }
+      );
     }
 
     const interviewData = await request.json();

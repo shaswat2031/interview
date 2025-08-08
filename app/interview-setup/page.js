@@ -5,6 +5,7 @@ import Head from "next/head";
 const InterviewSetupPage = () => {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [userStats, setUserStats] = useState(null);
   const [error, setError] = useState("");
   const [step, setStep] = useState(1);
 
@@ -23,7 +24,57 @@ const InterviewSetupPage = () => {
 
   useEffect(() => {
     fetchProfile();
+    fetchUserStats();
+    loadTemplateData();
   }, []);
+
+  const loadTemplateData = () => {
+    try {
+      const templateData = localStorage.getItem("interviewTemplate");
+      if (templateData) {
+        const template = JSON.parse(templateData);
+
+        // Pre-fill the form with template data
+        setInterviewData({
+          type: template.type || "",
+          company: template.company || "",
+          jobTitle: template.jobTitle || "",
+          difficulty: template.difficulty || "Intermediate",
+          duration: template.duration || 30,
+          focus: template.focus || [],
+          customRequirements: template.customRequirements || "",
+        });
+
+        // Clear the template data from localStorage after using it
+        localStorage.removeItem("interviewTemplate");
+
+        // Auto-advance to step 2 since template is pre-filled
+        setStep(2);
+      }
+    } catch (err) {
+      console.error("Error loading template data:", err);
+    }
+  };
+
+  const fetchUserStats = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch("/api/dashboard", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserStats(data.userStats);
+      }
+    } catch (err) {
+      console.error("Error fetching user stats:", err);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -132,7 +183,19 @@ const InterviewSetupPage = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to start interview");
+        if (data.planLimit) {
+          // Handle plan limit error specifically
+          setError(
+            `${data.error} You are currently on the ${
+              data.userPlan || "free"
+            } plan.`
+          );
+          // Refresh user stats to show updated limit status
+          await fetchUserStats();
+        } else {
+          throw new Error(data.error || "Failed to start interview");
+        }
+        return;
       }
 
       // Redirect to interview session
@@ -206,6 +269,75 @@ const InterviewSetupPage = () => {
             Let's create a personalized interview experience for you
           </p>
         </div>
+
+        {/* Plan Status */}
+        {userStats && (
+          <div className="mb-8">
+            <div
+              className={`rounded-lg p-4 ${
+                userStats.interviewsTotal === -1 ||
+                userStats.interviewsUsed < userStats.interviewsTotal
+                  ? "bg-green-50 border border-green-200"
+                  : "bg-red-50 border border-red-200"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3
+                    className={`font-medium ${
+                      userStats.interviewsTotal === -1 ||
+                      userStats.interviewsUsed < userStats.interviewsTotal
+                        ? "text-green-800"
+                        : "text-red-800"
+                    }`}
+                  >
+                    {userStats.plan === "weekly" || userStats.plan === "monthly"
+                      ? "Unlimited Plan"
+                      : `${
+                          userStats.plan?.charAt(0).toUpperCase() +
+                            userStats.plan?.slice(1) || "Free"
+                        } Plan`}
+                  </h3>
+                  <p
+                    className={`text-sm ${
+                      userStats.interviewsTotal === -1 ||
+                      userStats.interviewsUsed < userStats.interviewsTotal
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    Interviews Used: {userStats.interviewsUsed} /{" "}
+                    {userStats.interviewsTotal === -1
+                      ? "∞"
+                      : userStats.interviewsTotal}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {userStats.interviewsTotal !== -1 &&
+                  userStats.interviewsUsed >= userStats.interviewsTotal ? (
+                    <button
+                      onClick={() => (window.location.href = "/select-plan")}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+                    >
+                      Upgrade Plan
+                    </button>
+                  ) : (
+                    <span className="text-green-600 text-2xl">✓</span>
+                  )}
+                </div>
+              </div>
+              {userStats.interviewsTotal !== -1 &&
+                userStats.interviewsUsed >= userStats.interviewsTotal && (
+                  <div className="mt-2">
+                    <p className="text-red-600 text-sm">
+                      You've reached your plan limit. Upgrade to continue taking
+                      interviews.
+                    </p>
+                  </div>
+                )}
+            </div>
+          </div>
+        )}
 
         {/* Progress Steps */}
         <div className="mb-8">
@@ -548,7 +680,12 @@ const InterviewSetupPage = () => {
                 <button
                   type="button"
                   onClick={startInterview}
-                  disabled={loading}
+                  disabled={
+                    loading ||
+                    (userStats &&
+                      userStats.interviewsTotal !== -1 &&
+                      userStats.interviewsUsed >= userStats.interviewsTotal)
+                  }
                   className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                 >
                   {loading ? (
@@ -575,6 +712,10 @@ const InterviewSetupPage = () => {
                       </svg>
                       Starting Interview...
                     </>
+                  ) : userStats &&
+                    userStats.interviewsTotal !== -1 &&
+                    userStats.interviewsUsed >= userStats.interviewsTotal ? (
+                    "Upgrade Plan to Continue"
                   ) : (
                     "Start Interview 🚀"
                   )}

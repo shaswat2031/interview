@@ -60,6 +60,146 @@ const PracticePage = () => {
     { value: "leadership", label: "Leadership", icon: "👑" },
   ];
 
+  // Function to start template interview with pre-filled data
+  const startTemplateInterview = (templateType) => {
+    const templates = {
+      frontend: {
+        type: "Technical",
+        company: "Tech Startup",
+        jobTitle: "Frontend Developer",
+        difficulty: "Intermediate",
+        duration: 45,
+        focus: ["Problem Solving", "Technical Knowledge", "Code Quality"],
+        customRequirements:
+          "Focus on React, JavaScript, CSS, and modern frontend development practices",
+      },
+      software: {
+        type: "Technical",
+        company: "FAANG",
+        jobTitle: "Software Engineer",
+        difficulty: "Advanced",
+        duration: 60,
+        focus: [
+          "Data Structures",
+          "Algorithms",
+          "System Architecture",
+          "Problem Solving",
+        ],
+        customRequirements:
+          "Focus on data structures, algorithms, system design, and coding best practices",
+      },
+      product: {
+        type: "Behavioral",
+        company: "Fortune 500",
+        jobTitle: "Product Manager",
+        difficulty: "Intermediate",
+        duration: 30,
+        focus: ["Leadership", "Communication", "Project Management"],
+        customRequirements:
+          "Focus on product strategy, leadership skills, and stakeholder communication",
+      },
+      devops: {
+        type: "Technical",
+        company: "Cloud Company",
+        jobTitle: "DevOps Engineer",
+        difficulty: "Advanced",
+        duration: 50,
+        focus: [
+          "System Architecture",
+          "Technical Knowledge",
+          "Problem Solving",
+        ],
+        customRequirements:
+          "Focus on AWS, Docker, Kubernetes, CI/CD pipelines, and cloud infrastructure",
+      },
+      datascience: {
+        type: "Technical",
+        company: "Tech Giant",
+        jobTitle: "Data Scientist",
+        difficulty: "Advanced",
+        duration: 45,
+        focus: ["Technical Knowledge", "Problem Solving", "Data Structures"],
+        customRequirements:
+          "Focus on Python, machine learning, statistics, SQL, and data analysis",
+      },
+      ux: {
+        type: "Behavioral",
+        company: "Design Agency",
+        jobTitle: "UX Designer",
+        difficulty: "Intermediate",
+        duration: 40,
+        focus: ["Communication", "Problem Solving", "Team Collaboration"],
+        customRequirements:
+          "Focus on design thinking, prototyping, user research, and design processes",
+      },
+      fullstack: {
+        type: "Technical",
+        company: "TCS",
+        jobTitle: "Full Stack Developer",
+        difficulty: "Intermediate",
+        duration: 50,
+        focus: [
+          "Technical Knowledge",
+          "Problem Solving",
+          "System Architecture",
+        ],
+        customRequirements:
+          "Focus on full stack development, databases, APIs, and web technologies",
+      },
+      systemadmin: {
+        type: "Technical",
+        company: "Wipro",
+        jobTitle: "System Administrator",
+        difficulty: "Intermediate",
+        duration: 35,
+        focus: ["Technical Knowledge", "Problem Solving", "System Management"],
+        customRequirements:
+          "Focus on server management, networking, security, and system troubleshooting",
+      },
+      qa: {
+        type: "Technical",
+        company: "Microsoft",
+        jobTitle: "QA Engineer",
+        difficulty: "Intermediate",
+        duration: 40,
+        focus: ["Technical Knowledge", "Problem Solving", "Quality Assurance"],
+        customRequirements:
+          "Focus on test automation, manual testing, bug tracking, and quality processes",
+      },
+      mobile: {
+        type: "Technical",
+        company: "Google",
+        jobTitle: "Mobile Developer",
+        difficulty: "Advanced",
+        duration: 55,
+        focus: ["Technical Knowledge", "Problem Solving", "Mobile Development"],
+        customRequirements:
+          "Focus on iOS/Android development, mobile UI/UX, and app optimization",
+      },
+      cybersecurity: {
+        type: "Technical",
+        company: "IBM",
+        jobTitle: "Cybersecurity Analyst",
+        difficulty: "Advanced",
+        duration: 45,
+        focus: ["Technical Knowledge", "Problem Solving", "Security Analysis"],
+        customRequirements:
+          "Focus on threat analysis, security protocols, incident response, and risk assessment",
+      },
+    };
+
+    const selectedTemplate = templates[templateType];
+    if (selectedTemplate) {
+      // Store template data in localStorage to be picked up by interview-setup page
+      localStorage.setItem(
+        "interviewTemplate",
+        JSON.stringify(selectedTemplate)
+      );
+      // Redirect to interview setup page
+      window.location.href = "/interview-setup";
+    }
+  };
+
   const practiceTemplates = [
     {
       title: "Frontend Developer",
@@ -69,6 +209,7 @@ const PracticePage = () => {
       duration: "45 min",
       topics: ["React", "JavaScript", "CSS", "Git"],
       icon: "🌐",
+      templateKey: "frontend",
     },
     {
       title: "Software Engineer",
@@ -78,6 +219,7 @@ const PracticePage = () => {
       duration: "60 min",
       topics: ["Data Structures", "Algorithms", "System Design"],
       icon: "⚙️",
+      templateKey: "software",
     },
     {
       title: "Product Manager",
@@ -87,6 +229,7 @@ const PracticePage = () => {
       duration: "30 min",
       topics: ["Leadership", "Strategy", "Communication"],
       icon: "📊",
+      templateKey: "product",
     },
     {
       title: "DevOps Engineer",
@@ -96,6 +239,82 @@ const PracticePage = () => {
       duration: "50 min",
       topics: ["AWS", "Docker", "Kubernetes", "CI/CD"],
       icon: "☁️",
+      templateKey: "devops",
+    },
+    {
+      title: "Data Scientist",
+      company: "Tech Giant",
+      type: "Technical",
+      difficulty: "Advanced",
+      duration: "45 min",
+      topics: ["Python", "ML", "Statistics", "SQL"],
+      icon: "🔬",
+      templateKey: "datascience",
+    },
+    {
+      title: "UX Designer",
+      company: "Design Agency",
+      type: "Behavioral",
+      difficulty: "Intermediate",
+      duration: "40 min",
+      topics: ["Design Thinking", "Prototyping", "User Research"],
+      icon: "🎨",
+      templateKey: "ux",
+    },
+    {
+      title: "Full Stack Developer",
+      company: "TCS",
+      type: "Technical",
+      difficulty: "Intermediate",
+      duration: "50 min",
+      topics: ["React", "Node.js", "MongoDB", "APIs"],
+      icon: "🔧",
+      templateKey: "fullstack",
+    },
+    {
+      title: "System Administrator",
+      company: "Wipro",
+      type: "Technical",
+      difficulty: "Intermediate",
+      duration: "35 min",
+      topics: ["Linux", "Networking", "Security", "Troubleshooting"],
+      icon: "🖥️",
+      templateKey: "systemadmin",
+    },
+    {
+      title: "QA Engineer",
+      company: "Microsoft",
+      type: "Technical",
+      difficulty: "Intermediate",
+      duration: "40 min",
+      topics: ["Test Automation", "Selenium", "Bug Tracking", "Quality"],
+      icon: "🔍",
+      templateKey: "qa",
+    },
+    {
+      title: "Mobile Developer",
+      company: "Google",
+      type: "Technical",
+      difficulty: "Advanced",
+      duration: "55 min",
+      topics: ["React Native", "iOS", "Android", "Mobile UI"],
+      icon: "📱",
+      templateKey: "mobile",
+    },
+    {
+      title: "Cybersecurity Analyst",
+      company: "IBM",
+      type: "Technical",
+      difficulty: "Advanced",
+      duration: "45 min",
+      topics: [
+        "Threat Analysis",
+        "Security",
+        "Risk Assessment",
+        "Incident Response",
+      ],
+      icon: "🔒",
+      templateKey: "cybersecurity",
     },
   ];
 
@@ -220,7 +439,7 @@ const PracticePage = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Practice Templates
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {practiceTemplates.map((template, index) => (
                 <div
                   key={index}
@@ -265,11 +484,12 @@ const PracticePage = () => {
                       </span>
                     )}
                   </div>
-                  <Link href="/interview-setup">
-                    <button className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                      Start Practice
-                    </button>
-                  </Link>
+                  <button
+                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    onClick={() => startTemplateInterview(template.templateKey)}
+                  >
+                    Start Practice
+                  </button>
                 </div>
               ))}
             </div>

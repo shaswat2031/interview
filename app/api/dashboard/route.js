@@ -30,7 +30,6 @@ export async function GET(request) {
     // Calculate stats
     const totalInterviews = await Interview.countDocuments({
       userId: decoded.userId,
-      status: "completed",
     });
 
     const completedInterviews = await Interview.find({
@@ -63,10 +62,10 @@ export async function GET(request) {
       .limit(5);
 
     const stats = {
-      totalInterviews,
+      totalInterviews: completedInterviews.length, // Keep this as completed for display
       averageScore: Math.round(averageScore * 10) / 10,
       totalPracticeHours: Math.round(totalPracticeHours * 10) / 10,
-      skillsImproved: Math.min(Math.floor(totalInterviews / 2), 10), // Simple calculation
+      skillsImproved: Math.min(Math.floor(completedInterviews.length / 2), 10), // Simple calculation
     };
 
     // Format userStats for dashboard
@@ -75,7 +74,7 @@ export async function GET(request) {
       plan: user.plan || "",
       planPrice: "", // You can add pricing logic here later
       avatar: "👨‍💼",
-      interviewsUsed: totalInterviews,
+      interviewsUsed: totalInterviews, // Count all interviews for plan limits
       interviewsTotal:
         user.plan === "free" ? 1 : user.plan === "starter" ? 5 : -1, // -1 for unlimited (weekly/monthly)
       averageScore: stats.averageScore,
