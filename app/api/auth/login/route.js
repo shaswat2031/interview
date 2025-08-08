@@ -1,9 +1,13 @@
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import jwt from "jsonwebtoken";
+import { validateEnvVars } from "@/lib/validateEnv";
 
 export async function POST(request) {
   try {
+    // Validate environment variables
+    validateEnvVars();
+
     await dbConnect();
 
     const { email, password } = await request.json();
@@ -39,6 +43,10 @@ export async function POST(request) {
     await user.save();
 
     // Generate JWT token
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET environment variable is not set");
+    }
+
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET,

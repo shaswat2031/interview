@@ -2,9 +2,13 @@ import dbConnect from "@/lib/mongodb";
 import Profile from "@/models/Profile";
 import User from "@/models/User";
 import jwt from "jsonwebtoken";
+import { validateEnvVars } from "@/lib/validateEnv";
 
 export async function POST(request) {
   try {
+    // Validate environment variables
+    validateEnvVars();
+
     await dbConnect();
 
     // Get token from Authorization header
@@ -54,12 +58,25 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Profile setup error:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Error stack:", error.stack);
+
+    // Return more specific error information for debugging
+    return Response.json(
+      {
+        error: "Internal server error",
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 }
 
 export async function GET(request) {
   try {
+    // Validate environment variables
+    validateEnvVars();
+
     await dbConnect();
 
     // Get token from Authorization header
@@ -80,6 +97,15 @@ export async function GET(request) {
     return Response.json(profile);
   } catch (error) {
     console.error("Get profile error:", error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Error stack:", error.stack);
+
+    return Response.json(
+      {
+        error: "Internal server error",
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 }
