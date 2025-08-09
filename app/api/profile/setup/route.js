@@ -74,10 +74,42 @@ export async function POST(request) {
 
 export async function GET(request) {
   try {
-    // Validate environment variables
-    validateEnvVars();
+    // Validate environment variables - with try/catch for better error handling
+    try {
+      validateEnvVars();
+    } catch (envError) {
+      console.error("Environment validation error:", envError);
+      return Response.json(
+        {
+          error: "Server configuration error",
+          message:
+            "Missing required environment variables. Please contact support.",
+          detail:
+            process.env.NODE_ENV === "development"
+              ? envError.message
+              : undefined,
+        },
+        { status: 500 }
+      );
+    }
 
-    await dbConnect();
+    // Try to connect to the database with better error handling
+    try {
+      await dbConnect();
+    } catch (dbError) {
+      console.error("Database connection error:", dbError);
+      return Response.json(
+        {
+          error: "Database connection error",
+          message: "Failed to connect to the database. Please try again later.",
+          detail:
+            process.env.NODE_ENV === "development"
+              ? dbError.message
+              : undefined,
+        },
+        { status: 500 }
+      );
+    }
 
     // Get token from Authorization header
     const authHeader = request.headers.get("authorization");
@@ -86,9 +118,39 @@ export async function GET(request) {
     }
 
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    let profile = await Profile.findOne({ userId: decoded.userId });
+    // Verify JWT with better error handling
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (!decoded || !decoded.userId) {
+        return Response.json({ error: "Invalid token" }, { status: 401 });
+      }
+    } catch (jwtError) {
+      console.error("JWT verification error:", jwtError);
+      return Response.json(
+        {
+          error: "Authentication failed",
+          message: "Your session has expired. Please log in again.",
+        },
+        { status: 401 }
+      );
+    }
+
+    // Find profile with error handling for database operations
+    let profile;
+    try {
+      profile = await Profile.findOne({ userId: decoded.userId });
+    } catch (dbError) {
+      console.error("Database query error:", dbError);
+      return Response.json(
+        {
+          error: "Database error",
+          message: "Failed to retrieve your profile. Please try again.",
+        },
+        { status: 500 }
+      );
+    }
 
     if (!profile) {
       // Get user info to create a basic profile

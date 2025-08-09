@@ -84,6 +84,8 @@ const InterviewSetupPage = () => {
         return;
       }
 
+      setLoading(true);
+
       const response = await fetch("/api/profile/setup", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -105,11 +107,32 @@ const InterviewSetupPage = () => {
       } else if (response.status === 404) {
         // Profile doesn't exist yet, that's okay
         console.log("No profile found, user can create one");
+      } else if (response.status === 401) {
+        // Authentication issue
+        console.error("Authentication error. Redirecting to login...");
+        localStorage.removeItem("token");
+        window.location.href = "/login";
       } else {
-        console.error("Error fetching profile:", response.status);
+        // Handle other errors
+        let errorData = {};
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          errorData = { message: "Unknown server error" };
+        }
+
+        console.error("Error fetching profile:", response.status, errorData);
+        setError(
+          `Failed to load profile: ${errorData.message || response.statusText}`
+        );
       }
     } catch (err) {
       console.error("Error fetching profile:", err);
+      setError(
+        "Network error while loading profile. Please check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -236,10 +259,36 @@ const InterviewSetupPage = () => {
   if (!profile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading profile...</p>
-        </div>
+        {error ? (
+          <div className="text-center bg-white p-8 rounded-lg shadow-md max-w-md">
+            <div className="text-red-600 text-5xl mb-4">⚠️</div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Profile Error
+            </h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <div className="space-y-3">
+              <button
+                onClick={() => fetchProfile()}
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => (window.location.href = "/dashboard")}
+                className="w-full bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">
+              {loading ? "Loading profile..." : "Initializing..."}
+            </p>
+          </div>
+        )}
       </div>
     );
   }
