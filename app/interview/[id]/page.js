@@ -30,6 +30,10 @@ const InterviewSessionPage = () => {
   const [speechToTextEnabled, setSpeechToTextEnabled] = useState(true);
   const [speechError, setSpeechError] = useState(null);
   const [networkRetryCount, setNetworkRetryCount] = useState(0);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [networkStatus, setNetworkStatus] = useState(navigator.onLine);
+  const [bufferMode, setBufferMode] = useState(false);
+  const [recognitionBackoffTime, setRecognitionBackoffTime] = useState(2000);
 
   const handleAnswerChange = (value) => {
     setAnswers((prev) => ({
@@ -161,32 +165,49 @@ const InterviewSessionPage = () => {
         window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognitionInstance = new SpeechRecognition();
 
+      // Configure the recognition instance
       recognitionInstance.continuous = true;
       recognitionInstance.interimResults = true;
       recognitionInstance.lang = "en-US";
       recognitionInstance.maxAlternatives = 1;
 
+      // Set a shorter timeout to detect network issues faster
+      if (networkStatus === false || isOfflineMode) {
+        // In offline or known poor network, use higher timeout
+        recognitionInstance.timeout = 10000; // 10 seconds before timing out
+      } else {
+        recognitionInstance.timeout = 5000; // 5 seconds in normal mode
+      }
+
       let finalTranscript = "";
       let restartAttempts = 0;
-      const maxRestartAttempts = 3;
+      const maxRestartAttempts = 5; // Increased from 3 to 5
+      let lastRecognitionTime = Date.now();
+      let localBuffer = "";
 
       recognitionInstance.onstart = () => {
         setIsListening(true);
         restartAttempts = 0; // Reset attempts on successful start
         setSpeechError(null); // Clear any previous errors
         setNetworkRetryCount(0); // Reset network retry count on successful start
+        lastRecognitionTime = Date.now();
       };
 
       recognitionInstance.onresult = (event) => {
         let interimTranscript = "";
+        lastRecognitionTime = Date.now(); // Update last successful recognition time
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
 
           if (event.results[i].isFinal) {
             finalTranscript += transcript + " ";
+            // Clear buffer as we got a final result
+            localBuffer = "";
           } else {
             interimTranscript += transcript;
+            // Update buffer with latest interim result
+            localBuffer = interimTranscript;
           }
         }
 
@@ -213,19 +234,53 @@ const InterviewSessionPage = () => {
 
       recognitionInstance.onerror = (event) => {
         console.error("Speech recognition error:", event.error);
-        setIsListening(false);
+
+        // Calculate time since last successful recognition
+        const timeSinceLastSuccess = Date.now() - lastRecognitionTime;
 
         // Handle different types of errors
         switch (event.error) {
           case "network":
             console.log("Network error - check internet connection");
-            setSpeechError(
-              "Network connection issue. Speech-to-text temporarily unavailable."
-            );
 
-            // Implement progressive retry with backoff
-            if (networkRetryCount < 3) {
-              const retryDelay = Math.pow(2, networkRetryCount) * 2000; // 2s, 4s, 8s
+            // If we have local buffer content, use it
+            if (localBuffer && localBuffer.trim().length > 0) {
+              const currentAnswer = answers[currentQuestionIndex] || "";
+              const baseAnswer = currentAnswer
+                .replace(/\[Speaking...\].*$/, "")
+                .trim();
+
+              // Add the buffered content to the answer
+              handleAnswerChange(
+                baseAnswer + (baseAnswer ? " " : "") + localBuffer.trim()
+              );
+
+              setSpeechError(
+                "Limited connectivity - Using locally buffered text."
+              );
+
+              // Clear buffer after using it
+              localBuffer = "";
+            } else {
+              setSpeechError(
+                "Network connection issue. Using offline mode. Continue speaking."
+              );
+            }
+
+            setIsOfflineMode(true);
+            setIsListening(false);
+
+            // Implement adaptive progressive retry with increased backoff
+            if (networkRetryCount < 5) {
+              // Increased from 3 to 5
+              // Exponential backoff with jitter
+              const baseDelay = Math.pow(1.8, networkRetryCount) * 1000; // 1.8s, 3.24s, 5.8s, 10.5s, 18.9s
+              const jitter = Math.random() * 1000; // Add up to 1s of jitter
+              const retryDelay = baseDelay + jitter;
+
+              // Update the backoff time for display
+              setRecognitionBackoffTime(Math.round(retryDelay / 1000));
+
               setTimeout(() => {
                 if (speechToTextEnabled) {
                   console.log(
@@ -237,21 +292,36 @@ const InterviewSessionPage = () => {
                   setSpeechError(
                     `Retrying connection... (attempt ${
                       networkRetryCount + 1
-                    }/3)`
+                    }/5)`
                   );
-                  initializeSpeechRecognition();
+
+                  // Try to detect network status
+                  if (navigator.onLine) {
+                    // Even if browser reports online, use buffer mode
+                    setBufferMode(true);
+                    startListening();
+                  } else {
+                    // If definitely offline, wait longer
+                    setTimeout(() => startListening(), 3000);
+                  }
                 }
               }, retryDelay);
             } else {
+              // After max retries, switch to manual mode
               setSpeechError(
-                "Network connection failed. Please check your internet and refresh the page."
+                "Network connection unstable. Continue typing your answer."
               );
-              setSpeechToTextEnabled(false);
+              setBufferMode(true); // Enable buffer mode for future attempts
+              setTimeout(() => {
+                setSpeechError(null);
+              }, 5000);
             }
             break;
 
           case "no-speech":
-            setSpeechError(null); // Clear any previous errors
+            // Don't show an error for no-speech
+            setSpeechError(null);
+
             // Only restart if we're still supposed to be listening and haven't exceeded attempts
             if (restartAttempts < maxRestartAttempts) {
               restartAttempts++;
@@ -297,25 +367,69 @@ const InterviewSessionPage = () => {
 
           default:
             console.log(`Speech recognition error: ${event.error}`);
-            setSpeechError(
-              `Speech recognition error: ${event.error}. Please try again.`
-            );
+
+            // For other errors, try to restart if offline mode is active
+            if (isOfflineMode || bufferMode) {
+              setSpeechError("Reconnecting speech service...");
+              setTimeout(() => {
+                if (speechToTextEnabled && !isListening) {
+                  startListening();
+                }
+              }, 2000);
+            } else {
+              setSpeechError(
+                `Speech recognition error: ${event.error}. Please try again.`
+              );
+            }
         }
       };
 
       recognitionInstance.onend = () => {
-        setIsListening(false);
         // Clean up any [Speaking...] indicators
         const currentAnswer = answers[currentQuestionIndex] || "";
         const cleanAnswer = currentAnswer
           .replace(/\[Speaking...\].*$/, "")
           .trim();
+
         if (cleanAnswer !== currentAnswer) {
           handleAnswerChange(cleanAnswer);
         }
 
+        // Check if we have buffer content to save before stopping
+        if (localBuffer && localBuffer.trim().length > 0 && isOfflineMode) {
+          const baseAnswer = cleanAnswer;
+          handleAnswerChange(
+            baseAnswer + (baseAnswer ? " " : "") + localBuffer.trim()
+          );
+          localBuffer = "";
+        }
+
+        // Detect if recognition ended but we should be listening
+        // This could happen due to transient issues
+        const shouldBeListening = isListening;
+        setIsListening(false);
+
         // Reset final transcript for next session
         finalTranscript = "";
+
+        // If we should be listening but not in a network error state
+        // try to restart the recognition
+        if (
+          shouldBeListening &&
+          speechToTextEnabled &&
+          !document.hidden && // Don't restart if page is in background
+          networkRetryCount < 2
+        ) {
+          // Only auto-restart for the first few attempts
+
+          // Wait a moment then try to restart
+          setTimeout(() => {
+            if (speechToTextEnabled && !isListening) {
+              console.log("Recognition ended unexpectedly, restarting...");
+              startListening();
+            }
+          }, 300);
+        }
       };
 
       setRecognition(recognitionInstance);
@@ -328,6 +442,14 @@ const InterviewSessionPage = () => {
   const startListening = () => {
     if (recognition && speechToTextEnabled && !isListening) {
       try {
+        // Check if offline mode should be used
+        if (isOfflineMode || !navigator.onLine) {
+          setBufferMode(true);
+          setSpeechError("Using offline mode with local buffering");
+        } else {
+          setBufferMode(false);
+        }
+
         // Check if recognition is already running
         if (recognition.state === "listening") {
           recognition.stop();
@@ -344,18 +466,43 @@ const InterviewSessionPage = () => {
         // If it's already started, just update the state
         if (error.message && error.message.includes("already started")) {
           setIsListening(true);
+        } else {
+          // For other errors, reinitialize speech recognition
+          setTimeout(() => {
+            initializeSpeechRecognition();
+            setTimeout(() => {
+              if (speechToTextEnabled) startListening();
+            }, 500);
+          }, 1000);
         }
       }
     }
   };
 
   const stopListening = () => {
-    if (recognition && isListening) {
+    if (recognition) {
       try {
-        recognition.stop();
+        // If we have buffer content, add it to the answer
+        if (localBuffer && localBuffer.trim().length > 0) {
+          const currentAnswer = answers[currentQuestionIndex] || "";
+          const baseAnswer = currentAnswer
+            .replace(/\[Speaking...\].*$/, "")
+            .trim();
+
+          handleAnswerChange(
+            baseAnswer + (baseAnswer ? " " : "") + localBuffer.trim()
+          );
+          localBuffer = "";
+        }
+
+        if (isListening) {
+          recognition.stop();
+        }
       } catch (error) {
         console.error("Error stopping speech recognition:", error);
+      } finally {
         setIsListening(false);
+        setSpeechError(null);
       }
     }
   };
@@ -382,7 +529,52 @@ const InterviewSessionPage = () => {
     }
 
     initializeSpeechRecognition();
-  }, []);
+
+    // Add network status monitoring
+    const handleOnline = () => {
+      console.log("Network connection restored");
+      setNetworkStatus(true);
+      setSpeechError(
+        "Network connection restored. Speech recognition available."
+      );
+      setIsOfflineMode(false);
+      setNetworkRetryCount(0);
+
+      // If we were in offline mode, restart recognition
+      if (isOfflineMode) {
+        setTimeout(() => {
+          if (!isListening && speechToTextEnabled) {
+            startListening();
+          }
+        }, 1000);
+      }
+
+      // Clear the error message after a moment
+      setTimeout(() => {
+        setSpeechError(null);
+      }, 3000);
+    };
+
+    const handleOffline = () => {
+      console.log("Network connection lost");
+      setNetworkStatus(false);
+      setIsOfflineMode(true);
+      setSpeechError(
+        "Network connection lost. Using offline mode with local buffering."
+      );
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    // Initialize network status
+    setNetworkStatus(navigator.onLine);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [isOfflineMode, isListening, speechToTextEnabled]);
 
   useEffect(() => {
     fetchInterview();
@@ -739,6 +931,25 @@ const InterviewSessionPage = () => {
                     />
                     <span>Enable speech-to-text</span>
                   </label>
+                  <label className="flex items-center space-x-2 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={bufferMode}
+                      onChange={(e) => {
+                        setBufferMode(e.target.checked);
+                        if (e.target.checked) {
+                          setSpeechError(
+                            "Buffer mode enabled for low bandwidth connections"
+                          );
+                          setTimeout(() => setSpeechError(null), 3000);
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span title="Enable this for unstable internet connections">
+                      Low bandwidth mode
+                    </span>
+                  </label>
                 </div>
               </div>
             )}
@@ -1043,7 +1254,9 @@ const InterviewSessionPage = () => {
                       isListening
                         ? "bg-red-600 text-white hover:bg-red-700 animate-pulse"
                         : speechToTextEnabled
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        ? isOfflineMode
+                          ? "bg-orange-600 text-white hover:bg-orange-700"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
                         : "bg-gray-400 text-gray-200 cursor-not-allowed"
                     }`}
                   >
@@ -1053,7 +1266,12 @@ const InterviewSessionPage = () => {
                         Stop Speaking
                       </>
                     ) : (
-                      <>🎙️ Start Speaking</>
+                      <>
+                        🎙️{" "}
+                        {isOfflineMode
+                          ? "Start Speaking (Offline Mode)"
+                          : "Start Speaking"}
+                      </>
                     )}
                   </button>
 
@@ -1064,14 +1282,28 @@ const InterviewSessionPage = () => {
                     Clear Answer
                   </button>
 
+                  {/* Network status indicator */}
+                  {isOfflineMode && (
+                    <div className="px-3 py-1 bg-orange-100 text-orange-800 rounded text-xs flex items-center">
+                      <span className="mr-1">📶</span>
+                      <span>
+                        Offline Mode - Speech recognition will use local
+                        buffering
+                      </span>
+                    </div>
+                  )}
+
                   {/* Manual retry button for network errors */}
                   {speechError && speechError.includes("Network") && (
                     <button
                       onClick={() => {
                         setSpeechError(null);
                         setNetworkRetryCount(0);
+                        setIsOfflineMode(false);
                         setSpeechToTextEnabled(true);
+                        setBufferMode(false);
                         initializeSpeechRecognition();
+                        setTimeout(() => startListening(), 500);
                       }}
                       className="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600"
                     >
@@ -1089,6 +1321,7 @@ const InterviewSessionPage = () => {
                           setSpeechToTextEnabled(true);
                           setSpeechError(null);
                           setNetworkRetryCount(0);
+                          setIsOfflineMode(false);
                           initializeSpeechRecognition();
                         }}
                         className="text-xs text-blue-600 hover:text-blue-700 underline"
@@ -1104,12 +1337,12 @@ const InterviewSessionPage = () => {
                       <span className="text-xs text-red-600">
                         ⚠️ {speechError}
                       </span>
-                      {speechError.includes("Network") &&
-                        !speechError.includes("failed") && (
-                          <div className="text-xs text-blue-600">
-                            <div className="animate-spin inline-block w-3 h-3 border border-blue-600 border-t-transparent rounded-full"></div>
-                          </div>
-                        )}
+                      {speechError.includes("Retrying") && (
+                        <div className="text-xs text-blue-600">
+                          <div className="animate-spin inline-block w-3 h-3 border border-blue-600 border-t-transparent rounded-full mr-1"></div>
+                          <span>Retrying in {recognitionBackoffTime}s</span>
+                        </div>
+                      )}
                     </div>
                   )}
 
