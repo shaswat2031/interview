@@ -11,17 +11,45 @@ function PaymentPageLoading() {
       <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Loading payment page...
-          </h2>
-          <p className="text-gray-600">
-            Please wait while we prepare your payment confirmation.
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading...</h2>
         </div>
       </div>
     </div>
   );
 }
+
+// SVG components to reduce duplication
+const CheckmarkIcon = () => (
+  <svg
+    className="h-10 w-10 text-green-500"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M5 13l4 4L19 7"
+    />
+  </svg>
+);
+
+const CrossIcon = () => (
+  <svg
+    className="h-10 w-10 text-red-500"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M6 18L18 6M6 6l12 12"
+    />
+  </svg>
+);
 
 // The actual payment success content
 function PaymentSuccessContent() {
@@ -32,9 +60,6 @@ function PaymentSuccessContent() {
 
   useEffect(() => {
     const paymentIntent = searchParams.get("payment_intent");
-    const paymentIntentClientSecret = searchParams.get(
-      "payment_intent_client_secret"
-    );
     const redirectStatus = searchParams.get("redirect_status");
 
     if (paymentIntent && redirectStatus === "succeeded") {
@@ -43,12 +68,13 @@ function PaymentSuccessContent() {
       // Fetch payment details if needed
       const fetchPaymentDetails = async () => {
         try {
+          const token = localStorage.getItem("token");
+          if (!token) return;
+
           const response = await fetch(
             `/api/verify-payment?paymentIntent=${paymentIntent}`,
             {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
+              headers: { Authorization: `Bearer ${token}` },
             }
           );
 
@@ -69,13 +95,13 @@ function PaymentSuccessContent() {
 
   // Redirect to dashboard after 5 seconds on success
   useEffect(() => {
+    let timer;
     if (paymentStatus === "success") {
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         router.push("/dashboard");
       }, 5000);
-
-      return () => clearTimeout(timer);
     }
+    return () => timer && clearTimeout(timer);
   }, [paymentStatus, router]);
 
   return (
@@ -96,20 +122,7 @@ function PaymentSuccessContent() {
         {paymentStatus === "success" && (
           <div className="text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-10 w-10 text-green-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+              <CheckmarkIcon />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Payment Successful!
@@ -150,20 +163,7 @@ function PaymentSuccessContent() {
         {paymentStatus === "failed" && (
           <div className="text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-10 w-10 text-red-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <CrossIcon />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Payment Failed

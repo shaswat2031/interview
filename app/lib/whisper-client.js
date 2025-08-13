@@ -1,6 +1,14 @@
 "use client";
 
-import * as transformers from "@huggingface/transformers";
+// Dynamically import the transformers library to reduce initial bundle size
+let transformersPromise = null;
+
+const getTransformers = async () => {
+  if (!transformersPromise) {
+    transformersPromise = import("@huggingface/transformers");
+  }
+  return await transformersPromise;
+};
 
 // Model configuration
 const MODEL_NAME = "Xenova/whisper-small";
@@ -16,6 +24,7 @@ export async function initSpeechToText() {
   if (!transcriber) {
     try {
       console.log("Loading Whisper model...");
+      const transformers = await getTransformers();
       transcriber = await transformers.pipeline(
         "automatic-speech-recognition",
         MODEL_NAME
@@ -38,6 +47,7 @@ export async function transcribeAudio(audioData) {
   try {
     // Make sure model is initialized
     const model = await initSpeechToText();
+    const transformers = await getTransformers();
 
     // Convert the Blob to a format that the model can understand
     // Create a URL from the Blob
@@ -45,9 +55,7 @@ export async function transcribeAudio(audioData) {
 
     // Use transformers.read_audio to convert to the expected format (Float32Array)
     // Default sampling rate for Whisper is 16000
-    const audioArray = await transformers.read_audio(audioUrl, 16000);
-
-    // Revoke the URL to free up memory
+    const audioArray = await transformers.read_audio(audioUrl, 16000); // Revoke the URL to free up memory
     URL.revokeObjectURL(audioUrl);
 
     // Transcribe the audio with the processed data
