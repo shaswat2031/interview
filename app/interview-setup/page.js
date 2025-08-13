@@ -180,9 +180,9 @@ const InterviewSetupPage = () => {
   const handleInputChange = (field, value) => {
     // Clear error for this field when user makes a change
     if (fieldErrors[field]) {
-      setFieldErrors(prev => ({ ...prev, [field]: null }));
+      setFieldErrors((prev) => ({ ...prev, [field]: null }));
     }
-    
+
     setInterviewData((prev) => ({
       ...prev,
       [field]: value,
@@ -197,7 +197,7 @@ const InterviewSetupPage = () => {
     if (!interviewData.company) {
       errors.company = "Company name is required";
     }
-    
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -414,13 +414,14 @@ const InterviewSetupPage = () => {
                   </h3>
                   <p
                     className={`text-sm ${
+                      userStats &&
                       userStats.interviewsUsed < userStats.interviewsTotal
                         ? "text-green-600"
                         : "text-red-600"
                     }`}
                   >
-                    Interviews Used: {userStats.interviewsUsed} /{" "}
-                    {userStats.interviewsTotal}
+                    Interviews Used: {userStats?.interviewsUsed || 0} /{" "}
+                    {userStats?.interviewsTotal || 0}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -496,7 +497,9 @@ const InterviewSetupPage = () => {
                   <select
                     value={interviewData.type}
                     onChange={(e) => handleInputChange("type", e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className={`w-full px-4 py-3 border ${
+                      fieldErrors.type ? "border-red-500" : "border-gray-300"
+                    } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                   >
                     <option value="">Select interview type</option>
                     {interviewTypes.map((type) => (
@@ -505,6 +508,11 @@ const InterviewSetupPage = () => {
                       </option>
                     ))}
                   </select>
+                  {fieldErrors.type && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {fieldErrors.type}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -517,9 +525,16 @@ const InterviewSetupPage = () => {
                     onChange={(e) =>
                       handleInputChange("company", e.target.value)
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className={`w-full px-4 py-3 border ${
+                      fieldErrors.company ? "border-red-500" : "border-gray-300"
+                    } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                     placeholder="e.g., Google, Microsoft, Startup XYZ"
                   />
+                  {fieldErrors.company && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {fieldErrors.company}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -615,8 +630,7 @@ const InterviewSetupPage = () => {
               <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
-                  disabled={!interviewData.type || !interviewData.company}
+                  onClick={handleNextStep}
                   className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next: Generate Questions

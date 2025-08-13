@@ -323,9 +323,12 @@ const InterviewDetailsPage = () => {
           {/* Questions and Answers */}
           {interview.questions && interview.questions.length > 0 && (
             <div className="bg-white rounded-lg shadow-lg mb-8">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Questions & Answers
+              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <span className="mr-2">📝</span> Questions & Answers
+                  <span className="ml-3 text-sm text-gray-500">
+                    ({interview.questions.length} questions)
+                  </span>
                 </h3>
               </div>
               <div className="p-6">
@@ -333,7 +336,7 @@ const InterviewDetailsPage = () => {
                   {interview.questions.map((question, index) => (
                     <div
                       key={index}
-                      className="border border-gray-200 rounded-lg p-4"
+                      className="border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
@@ -348,13 +351,16 @@ const InterviewDetailsPage = () => {
                               {question.difficulty}
                             </span>
                           </div>
-                          <h4 className="text-lg font-medium text-gray-900 mb-2">
+                          <h4 className="text-lg font-medium text-gray-900 mb-2 bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500">
                             {question.question}
                           </h4>
                           {question.context && (
-                            <p className="text-sm text-gray-600 mb-3">
-                              {question.context}
-                            </p>
+                            <div className="text-sm bg-gray-50 p-3 rounded-lg mb-3 border-l-4 border-gray-300">
+                              <span className="font-semibold">Context: </span>
+                              <p className="text-gray-600 mt-1">
+                                {question.context}
+                              </p>
+                            </div>
                           )}
                         </div>
                         <div className="text-right text-sm text-gray-500">
@@ -370,6 +376,44 @@ const InterviewDetailsPage = () => {
                           <p className="text-gray-600 whitespace-pre-wrap">
                             {interview.answers[index]}
                           </p>
+
+                          {question.modelAnswer && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <h5 className="font-medium text-green-700 mb-2">
+                                Model Answer:
+                              </h5>
+                              <p className="text-gray-600 whitespace-pre-wrap">
+                                {question.modelAnswer}
+                              </p>
+
+                              {question.answerTips && (
+                                <div className="mt-2 bg-blue-50 p-3 rounded-lg">
+                                  <h6 className="text-sm font-medium text-blue-700 mb-1">
+                                    Key Points:
+                                  </h6>
+                                  <ul className="text-sm text-blue-600 list-disc pl-5 space-y-1">
+                                    {question.answerTips
+                                      .split("\n")
+                                      .filter((tip) => tip.trim())
+                                      .map((tip, i) => (
+                                        <li key={i}>{tip.trim()}</li>
+                                      ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {question.feedback && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <h5 className="font-medium text-purple-700 mb-2">
+                                Question Feedback:
+                              </h5>
+                              <p className="text-gray-600 whitespace-pre-wrap">
+                                {question.feedback}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -382,9 +426,9 @@ const InterviewDetailsPage = () => {
           {/* AI Feedback */}
           {interview.feedback && interview.status === "completed" && (
             <div className="bg-white rounded-lg shadow-lg mb-8">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">
-                  AI Feedback & Analysis
+              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-blue-50">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <span className="mr-2">🤖</span> AI Feedback & Analysis
                 </h3>
               </div>
               <div className="p-6">

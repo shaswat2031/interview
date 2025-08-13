@@ -6,6 +6,17 @@ import jwt from "jsonwebtoken";
 
 export async function GET(request) {
   try {
+    // Check if Stripe is properly configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        {
+          error:
+            "Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable.",
+        },
+        { status: 500 }
+      );
+    }
+
     // Get token from Authorization header
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
