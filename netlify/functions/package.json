@@ -1,0 +1,9 @@
+{
+  "name": "interview-netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for the Interview AI Platform",
+  "dependencies": {
+    "mongoose": "^7.4.1",
+    "jsonwebtoken": "^9.0.1"
+  }
+}

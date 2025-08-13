@@ -1,0 +1,41 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+  functions = "netlify/functions"
+
+[dev]
+  command = "npm run dev"
+  port = 3000
+  targetPort = 3000
+  framework = "nextjs"
+
+# Define redirects and custom headers
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Uncomment if you need to proxy some requests
+# [[redirects]]
+#  from = "/external-api/*"
+#  to = "https://api.example.com/:splat"
+#  status = 200
+#  force = true
+
+# Specify the Netlify Next.js plugin
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Add environment variables that will be available to your Netlify functions
+[build.environment]
+  # NODE_VERSION = "18"
+
+# If you need to set headers for specific paths
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    Content-Security-Policy = "frame-ancestors 'none'"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"

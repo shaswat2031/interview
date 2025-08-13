@@ -8,7 +8,7 @@
     }
   ],
   "env": {
-    "MONGODB_URI": "@mongodb_uri",
+    "mongodb_uri": "mongodb+srv://prasadshaswat9265:prasadshaswat9265@cluster0.atgekgj.mongodb.net/interviewai?retryWrites=true&w=majority",
     "JWT_SECRET": "@jwt_secret",
     "NEXTAUTH_SECRET": "@nextauth_secret",
     "STRIPE_SECRET_KEY": "@stripe_secret_key",
