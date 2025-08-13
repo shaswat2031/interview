@@ -1,16 +1,25 @@
 "use client";
 
 // Dynamically import the transformers library to reduce initial bundle size
+// This ensures the transformers package is only loaded in the browser
 let transformersPromise = null;
 
 const getTransformers = async () => {
+  // Only load in browser environment
+  if (typeof window === "undefined") {
+    throw new Error(
+      "Speech recognition is only available in browser environments"
+    );
+  }
+
   if (!transformersPromise) {
+    // Dynamic import will be code-split and only loaded when needed
     transformersPromise = import("@huggingface/transformers");
   }
   return await transformersPromise;
 };
 
-// Model configuration - using the English-optimized tiny model for faster performance
+// Model configuration - using the small English-optimized model for better performance
 const MODEL_NAME = "Xenova/whisper-tiny.en";
 
 // Singleton to keep the model loaded
@@ -188,9 +197,13 @@ export function startRecordingWithTranscription({
  */
 export function isSpeechToTextSupported() {
   try {
+    // Only load in browser environment
+    if (typeof window === "undefined") {
+      return false;
+    }
+
     return (
-      typeof window !== "undefined" &&
-      navigator &&
+      typeof navigator !== "undefined" &&
       navigator.mediaDevices &&
       typeof navigator.mediaDevices.getUserMedia === "function" &&
       typeof window.MediaRecorder === "function"

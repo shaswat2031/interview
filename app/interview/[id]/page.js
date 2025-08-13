@@ -3,10 +3,25 @@ import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { useParams } from "next/navigation";
 import SpeechRecorder from "@/app/components/SpeechRecorder";
-import {
-  initSpeechToText,
-  isSpeechToTextSupported,
-} from "@/app/lib/whisper-client";
+// Remove direct imports of whisper-client
+// Import the browser utility instead
+import { isBrowser } from "@/app/lib/browser-utils";
+
+// Will hold dynamically imported speech recognition functions
+let speechRecognitionModule = null;
+
+// Function to dynamically import the speech recognition module
+const loadSpeechRecognition = async () => {
+  if (!speechRecognitionModule && isBrowser()) {
+    try {
+      speechRecognitionModule = await import("@/app/lib/whisper-client");
+    } catch (error) {
+      console.error("Error loading speech recognition:", error);
+      return null;
+    }
+  }
+  return speechRecognitionModule;
+};
 
 const InterviewSessionPage = () => {
   const params = useParams();
@@ -44,7 +59,17 @@ const InterviewSessionPage = () => {
   const initializeSpeechRecognition = async () => {
     try {
       setSpeechError(null);
-      const isSupported = isSpeechToTextSupported();
+
+      // Dynamically import the speech recognition module
+      const speechModule = await loadSpeechRecognition();
+
+      if (!speechModule) {
+        setSpeechToTextEnabled(false);
+        setSpeechError("Failed to load speech recognition module.");
+        return;
+      }
+
+      const isSupported = speechModule.isSpeechToTextSupported();
 
       if (!isSupported) {
         setSpeechToTextEnabled(false);
@@ -53,7 +78,7 @@ const InterviewSessionPage = () => {
       }
 
       // Initialize the Whisper model
-      await initSpeechToText();
+      await speechModule.initSpeechToText();
       setSpeechToTextEnabled(true);
       console.log("Speech recognition initialized successfully");
     } catch (error) {

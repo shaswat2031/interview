@@ -9,7 +9,15 @@ const nextConfig = {
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   },
-  serverExternalPackages: ["mongoose"],
+  serverExternalPackages: ["mongoose", "@huggingface/transformers"],
+  // Configure for browser-only usage of @huggingface/transformers
+  webpack: (config, { isServer }) => {
+    // This ensures transformers.js only runs on the client
+    if (isServer) {
+      config.resolve.alias["@huggingface/transformers"] = false;
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

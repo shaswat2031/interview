@@ -1,10 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  isSpeechToTextSupported,
-  startRecordingWithTranscription,
-} from "@/app/lib/whisper-client";
+import { isBrowser } from "@/app/lib/browser-utils";
+
+// Will hold dynamically imported speech recognition functions
+let speechRecognitionModule = null;
+
+// Function to dynamically import the speech recognition module
+const loadSpeechRecognition = async () => {
+  if (!speechRecognitionModule && isBrowser()) {
+    try {
+      speechRecognitionModule = await import("@/app/lib/whisper-client");
+    } catch (error) {
+      console.error("Error loading speech recognition:", error);
+      return null;
+    }
+  }
+  return speechRecognitionModule;
+};
 
 const SpeechRecorder = ({ onTranscriptionComplete, isDisabled = false }) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -17,10 +30,23 @@ const SpeechRecorder = ({ onTranscriptionComplete, isDisabled = false }) => {
 
   // Check if speech to text is supported
   useEffect(() => {
-    try {
-      setIsSupported(isSpeechToTextSupported());
-    } catch (error) {
-      console.error("Error checking speech support:", error);
+    const checkSupport = async () => {
+      try {
+        const speechModule = await loadSpeechRecognition();
+        if (speechModule) {
+          setIsSupported(speechModule.isSpeechToTextSupported());
+        } else {
+          setIsSupported(false);
+        }
+      } catch (error) {
+        console.error("Error checking speech support:", error);
+        setIsSupported(false);
+      }
+    };
+
+    if (isBrowser()) {
+      checkSupport();
+    } else {
       setIsSupported(false);
     }
   }, []);
@@ -48,7 +74,7 @@ const SpeechRecorder = ({ onTranscriptionComplete, isDisabled = false }) => {
       .padStart(2, "0")}`;
   };
 
-  const startRecording = () => {
+  const startRecording = async () => {
     if (isRecording || isDisabled) return;
 
     setError(null);
@@ -56,7 +82,14 @@ const SpeechRecorder = ({ onTranscriptionComplete, isDisabled = false }) => {
     setRecordingTime(0);
 
     try {
-      const controller = startRecordingWithTranscription({
+      // Dynamically load the speech recognition module
+      const speechModule = await loadSpeechRecognition();
+
+      if (!speechModule) {
+        throw new Error("Failed to load speech recognition module");
+      }
+
+      const controller = speechModule.startRecordingWithTranscription({
         maxDuration: 60000, // 1 minute max
         onRecordingStart: () => {
           console.log("Recording started");
