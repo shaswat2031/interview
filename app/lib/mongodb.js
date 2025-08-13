@@ -1,11 +1,13 @@
+// lib/dbConnect.js
 import mongoose from "mongoose";
 
-const MONGODB_URI =
-  process.env.mongodb_uri || "mongodb://localhost:27017/interviewai";
+const mongodb_uri =
+  "mongodb+srv://prasadshaswat9265:prasadshaswat9265@cluster0.atgekgj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
-if (!MONGODB_URI) {
+if (!mongodb_uri) {
   throw new Error(
-    "Please define the mongodb_uri environment variable inside .env.local"
+    "Please define the MONGODB_URI environment variable " +
+      "inside .env.local (for local) and in Vercel Environment Variables (for production)."
   );
 }
 
