@@ -178,10 +178,34 @@ const InterviewSetupPage = () => {
   };
 
   const handleInputChange = (field, value) => {
+    // Clear error for this field when user makes a change
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: null }));
+    }
+    
     setInterviewData((prev) => ({
       ...prev,
       [field]: value,
     }));
+  };
+
+  const validateStep1 = () => {
+    const errors = {};
+    if (!interviewData.type) {
+      errors.type = "Interview type is required";
+    }
+    if (!interviewData.company) {
+      errors.company = "Company name is required";
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleNextStep = () => {
+    if (validateStep1()) {
+      setStep(2);
+    }
   };
 
   const handleFocusToggle = (focus) => {
