@@ -5,7 +5,7 @@ export async function GET() {
   try {
     // Check environment variables
     const envCheck = {
-      MONGODB_URI: !!process.env.MONGODB_URI,
+      mongodb_uri: !!process.env.mongodb_uri,
       JWT_SECRET: !!process.env.JWT_SECRET,
       GEMINI_API_KEY: !!process.env.GEMINI_API_KEY,
       NEXTAUTH_SECRET: !!process.env.NEXTAUTH_SECRET,

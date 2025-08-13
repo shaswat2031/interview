@@ -20,7 +20,7 @@ The application is split into two parts:
 1. Push your code to GitHub
 2. Import the project in Vercel
 3. Configure the following environment variables:
-   - `MONGODB_URI`: Your MongoDB connection string
+   - `mongodb_uri`: Your MongoDB connection string
    - `JWT_SECRET`: Secret for JWT authentication
    - `NEXTAUTH_SECRET`: Secret for NextAuth
    - `STRIPE_SECRET_KEY`: Your Stripe secret key

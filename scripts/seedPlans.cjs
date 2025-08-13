@@ -3,7 +3,7 @@ require("dotenv").config({ path: ".env.local" });
 
 // MongoDB connection URI
 const MONGODB_URI =
-  process.env.MONGODB_URI ||
+  process.env.mongodb_uri ||
   "mongodb+srv://prasadshaswat9265:prasadshaswat9265@cluster0.atgekgj.mongodb.net/interviewai?retryWrites=true&w=majority";
 
 // Define Plan schema
