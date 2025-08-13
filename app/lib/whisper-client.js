@@ -10,8 +10,8 @@ const getTransformers = async () => {
   return await transformersPromise;
 };
 
-// Model configuration
-const MODEL_NAME = "Xenova/whisper-small";
+// Model configuration - using the English-optimized tiny model for faster performance
+const MODEL_NAME = "Xenova/whisper-tiny.en";
 
 // Singleton to keep the model loaded
 let transcriber = null;
@@ -41,9 +41,10 @@ export async function initSpeechToText() {
 /**
  * Transcribe audio from a file or blob
  * @param {File|Blob} audioData - The audio data to transcribe
+ * @param {Object} options - Options for transcription
  * @returns {Promise<string>} The transcribed text
  */
-export async function transcribeAudio(audioData) {
+export async function transcribeAudio(audioData, options = {}) {
   try {
     // Make sure model is initialized
     const model = await initSpeechToText();
@@ -55,11 +56,26 @@ export async function transcribeAudio(audioData) {
 
     // Use transformers.read_audio to convert to the expected format (Float32Array)
     // Default sampling rate for Whisper is 16000
-    const audioArray = await transformers.read_audio(audioUrl, 16000); // Revoke the URL to free up memory
+    const audioArray = await transformers.read_audio(audioUrl, 16000);
+    // Revoke the URL to free up memory
     URL.revokeObjectURL(audioUrl);
 
-    // Transcribe the audio with the processed data
-    const output = await model(audioArray);
+    // Setup transcription options
+    const transcriptionOptions = {
+      // Use English as the forced language for better accuracy
+      language: "en",
+      // Set task to transcribe for general transcription
+      task: "transcribe",
+      // Return word-level timestamps if requested
+      return_timestamps: options.returnWordTimestamps || false,
+      // Chunk size in seconds for faster processing
+      chunk_length_s: options.chunkLengthSeconds || 30,
+      // Stride between chunks for overlap processing
+      stride_length_s: options.strideLengthSeconds || 5,
+    };
+
+    // Transcribe the audio with optimized settings
+    const output = await model(audioArray, transcriptionOptions);
 
     return output.text || "";
   } catch (error) {
@@ -124,8 +140,18 @@ export function startRecordingWithTranscription({
         const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
 
         try {
-          // Transcribe the recorded audio
-          const transcription = await transcribeAudio(audioBlob);
+          // Transcribe the recorded audio with options
+          const transcriptionOptions = {
+            // Default to false for word timestamps
+            returnWordTimestamps: false,
+            // Use smaller chunks for faster real-time processing
+            chunkLengthSeconds: 15,
+            strideLengthSeconds: 3,
+          };
+          const transcription = await transcribeAudio(
+            audioBlob,
+            transcriptionOptions
+          );
           if (onTranscriptionComplete) onTranscriptionComplete(transcription);
         } catch (error) {
           if (onError) onError(error);
@@ -172,5 +198,47 @@ export function isSpeechToTextSupported() {
   } catch (error) {
     console.error("Error checking speech support:", error);
     return false;
+  }
+}
+
+/**
+ * Transcribe audio with word-level timestamps
+ * @param {File|Blob} audioData - The audio data to transcribe
+ * @returns {Promise<Object>} The transcribed text with timestamps
+ */
+export async function transcribeAudioWithTimestamps(audioData) {
+  try {
+    // Use the same transcribeAudio function but with word timestamps enabled
+    const options = {
+      returnWordTimestamps: true,
+      chunkLengthSeconds: 30,
+      strideLengthSeconds: 5,
+    };
+
+    // Make sure model is initialized
+    const model = await initSpeechToText();
+    const transformers = await getTransformers();
+
+    // Convert the Blob to a format that the model can understand
+    const audioUrl = URL.createObjectURL(audioData);
+    const audioArray = await transformers.read_audio(audioUrl, 16000);
+    URL.revokeObjectURL(audioUrl);
+
+    // Transcribe with timestamps
+    const transcriptionOptions = {
+      language: "en",
+      task: "transcribe",
+      return_timestamps: "word",
+      chunk_length_s: options.chunkLengthSeconds,
+      stride_length_s: options.strideLengthSeconds,
+    };
+
+    const output = await model(audioArray, transcriptionOptions);
+
+    // Return the full output which includes text and word chunks with timestamps
+    return output;
+  } catch (error) {
+    console.error("Error transcribing audio with timestamps:", error);
+    throw error;
   }
 }
