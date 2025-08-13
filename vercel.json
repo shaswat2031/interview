@@ -13,6 +13,6 @@
     "NEXTAUTH_SECRET": "@nextauth_secret",
     "STRIPE_SECRET_KEY": "@stripe_secret_key",
     "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "@stripe_publishable_key",
-    "NEXT_PUBLIC_MODEL_SERVICE_URL": "@model_service_url"
+  "NEXT_PUBLIC_MODEL_SERVICE_URL": "https://interview-service-o116.onrender.com"
   }
 }

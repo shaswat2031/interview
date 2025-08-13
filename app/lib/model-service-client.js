@@ -1,7 +1,6 @@
 "use client";
 
-const MODEL_SERVICE_URL =
-  process.env.NEXT_PUBLIC_MODEL_SERVICE_URL || "http://localhost:3001";
+const MODEL_SERVICE_URL = "https://interview-service-o116.onrender.com";
 
 /**
  * Client for interacting with the Model Service API
