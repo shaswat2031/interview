@@ -9,18 +9,15 @@ export async function GET() {
 
     // Format plans for frontend consumption
     const formattedPlans = plans.map((plan) => ({
+      id: plan.id,
       name: plan.name,
-      price: plan.monthlyPrice === 0 ? "Free" : `$${plan.monthlyPrice}`,
-      period: plan.monthlyPrice === 0 ? "" : "per month",
-      interviews:
-        plan.maxInterviews === -1
-          ? "Unlimited interviews"
-          : `${plan.maxInterviews} interviews`,
+      description: plan.description,
+      price: plan.monthlyPrice,
       features: plan.features || [],
       popular: plan.popular || false,
-      monthlyPrice: plan.monthlyPrice,
-      yearlyPrice: plan.yearlyPrice,
       maxInterviews: plan.maxInterviews,
+      isBundle: plan.isBundle || false,
+      validityMonths: plan.validityMonths || 1,
     }));
 
     return Response.json({

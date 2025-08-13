@@ -1,4 +1,4 @@
-import dbConnect from "../lib/mongodb";
+import dbConnect from "../lib/mongodb.js";
 import Plan from "../models/Plan.js";
 
 const seedPlans = async () => {
@@ -11,43 +11,64 @@ const seedPlans = async () => {
     const plans = [
       {
         id: "free",
-        name: "Free",
+        name: "Free Plan",
         description: "Get started with basic interview practice",
         monthlyPrice: 0,
         yearlyPrice: 0,
         features: [
-          "1 practice interview per month",
+          "1 interview per month",
           "Basic feedback reports",
           "Common interview questions",
           "Email support",
         ],
         popular: false,
         maxInterviews: 1,
+        isActive: true,
       },
       {
-        id: "starter",
-        name: "Starter",
-        description: "Perfect for regular interview practice",
-        monthlyPrice: 99,
-        yearlyPrice: 990,
+        id: "bundle2",
+        name: "Bundle of 2 Interviews",
+        description: "Perfect for immediate interview preparation",
+        monthlyPrice: 60,
+        yearlyPrice: 60, // One-time payment
         features: [
-          "5 practice interviews per month",
-          "Profile management",
-          "Plan management dashboard",
-          "Basic feedback analysis",
+          "2 practice interviews",
+          "Basic feedback reports",
           "Common interview questions",
           "Email support",
+          "Valid for 3 months",
         ],
         popular: false,
-        maxInterviews: 5,
+        maxInterviews: 2,
+        isActive: true,
+        isBundle: true,
       },
       {
-        id: "weekly",
-        name: "Weekly",
-        description: "Most popular choice for serious job seekers",
-        monthlyPrice: 199,
-        yearlyPrice: 1990,
+        id: "bundle5",
+        name: "Bundle of 5 Interviews",
+        description: "Best value for regular interview practice",
+        monthlyPrice: 150,
+        yearlyPrice: 150, // One-time payment
         features: [
+          "5 practice interviews",
+          "Detailed feedback analysis",
+          "Common interview questions",
+          "Priority email support",
+          "Valid for 6 months",
+        ],
+        popular: true,
+        maxInterviews: 5,
+        isActive: true,
+        isBundle: true,
+      },
+      {
+        id: "bundle8",
+        name: "Bundle of 8 Interviews",
+        description: "Comprehensive interview preparation package",
+        monthlyPrice: 210,
+        yearlyPrice: 210, // One-time payment
+        features: [
+          "8 practice interviews",
           "Unlimited practice interviews",
           "Advanced profile management",
           "Complete plan management",
@@ -57,7 +78,7 @@ const seedPlans = async () => {
           "Performance tracking",
         ],
         popular: true,
-        maxInterviews: -1,
+        maxInterviews: 8,
       },
       {
         id: "monthly",
@@ -75,7 +96,7 @@ const seedPlans = async () => {
           "Dedicated account manager",
         ],
         popular: false,
-        maxInterviews: -1,
+        maxInterviews: 8,
       },
     ];
 

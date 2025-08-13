@@ -1,5 +1,6 @@
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import Plan from "@/models/Plan";
 import jwt from "jsonwebtoken";
 
 export async function POST(request) {
@@ -15,22 +16,47 @@ export async function POST(request) {
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const { planId, billingCycle } = await request.json();
+    const { planId, isBundle, maxInterviews } = await request.json();
 
     // Validate input
-    if (!planId || !billingCycle) {
+    if (!planId) {
+      return Response.json({ error: "Plan ID is required" }, { status: 400 });
+    }
+
+    // Get the plan details
+    const plan = await Plan.findOne({ id: planId });
+    if (!plan) {
       return Response.json(
-        { error: "Plan ID and billing cycle are required" },
-        { status: 400 }
+        { error: "Selected plan not found" },
+        { status: 404 }
       );
     }
 
-    // Update user's plan
+    const billingCycle = isBundle ? "one-time" : "monthly";
+
+    // Get the user to check current interviews
+    const existingUser = await User.findById(decoded.userId);
+    if (!existingUser) {
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if this is a bundle purchase while user already has interviews
+    let newInterviewsCount = maxInterviews;
+    let wasUpgraded = false;
+
+    if (isBundle && existingUser.interviewsLeft > 0) {
+      // If user already has interviews and is buying a bundle, add to existing count
+      newInterviewsCount = existingUser.interviewsLeft + maxInterviews;
+      wasUpgraded = true;
+    }
+
+    // Update user's plan with correct number of interviews
     const user = await User.findByIdAndUpdate(
       decoded.userId,
       {
         plan: planId,
         billingCycle,
+        interviewsLeft: newInterviewsCount,
         subscriptionStatus: "active",
         profileComplete: true,
       },
@@ -42,7 +68,9 @@ export async function POST(request) {
     }
 
     return Response.json({
-      message: "Plan selected successfully",
+      message: wasUpgraded
+        ? `Plan selected successfully! Added ${maxInterviews} interviews to your existing ${existingUser.interviewsLeft} interviews.`
+        : "Plan selected successfully",
       user: {
         id: user._id,
         firstName: user.firstName,
@@ -52,6 +80,8 @@ export async function POST(request) {
         billingCycle: user.billingCycle,
         subscriptionStatus: user.subscriptionStatus,
         profileComplete: user.profileComplete,
+        interviewsLeft: user.interviewsLeft,
+        wasUpgraded: wasUpgraded,
       },
     });
   } catch (error) {

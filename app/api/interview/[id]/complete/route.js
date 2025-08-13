@@ -126,10 +126,17 @@ export async function POST(request, { params }) {
 
     await interview.save();
 
-    // Update user's last activity
-    await User.findByIdAndUpdate(decoded.userId, {
-      $set: { lastLoginAt: new Date() },
-    });
+    // Update user's last activity and decrement interviews left count
+    const user = await User.findById(decoded.userId);
+    if (user && user.interviewsLeft > 0) {
+      user.interviewsLeft -= 1;
+      user.lastLoginAt = new Date();
+      await user.save();
+    } else {
+      await User.findByIdAndUpdate(decoded.userId, {
+        $set: { lastLoginAt: new Date() },
+      });
+    }
 
     return NextResponse.json({
       success: true,

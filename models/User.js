@@ -27,18 +27,22 @@ const UserSchema = new mongoose.Schema(
     },
     plan: {
       type: String,
-      enum: ["free", "starter", "weekly", "monthly"],
-      default: null,
+      enum: ["free", "bundle2", "bundle5", "bundle8"],
+      default: "free",
     },
     billingCycle: {
       type: String,
-      enum: ["monthly", "yearly"],
+      enum: ["monthly", "yearly", "one-time"],
       default: "monthly",
+    },
+    interviewsLeft: {
+      type: Number,
+      default: 1, // Default for free plan
     },
     subscriptionStatus: {
       type: String,
-      enum: ["trial", "active", "cancelled", "expired"],
-      default: "trial",
+      enum: ["active", "cancelled", "expired"],
+      default: "active",
     },
     trialEndsAt: {
       type: Date,

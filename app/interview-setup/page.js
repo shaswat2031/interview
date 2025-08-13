@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
+import RenewInterviewsModal from "../components/RenewInterviewsModal";
 
 const InterviewSetupPage = () => {
   const [loading, setLoading] = useState(false);
@@ -8,6 +9,9 @@ const InterviewSetupPage = () => {
   const [userStats, setUserStats] = useState(null);
   const [error, setError] = useState("");
   const [step, setStep] = useState(1);
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const [interviewData, setInterviewData] = useState({
     type: "",
@@ -26,7 +30,64 @@ const InterviewSetupPage = () => {
     fetchProfile();
     fetchUserStats();
     loadTemplateData();
+    fetchPlans();
   }, []);
+
+  const fetchPlans = async () => {
+    try {
+      const response = await fetch("/api/plans");
+      if (response.ok) {
+        const data = await response.json();
+        const userPlanId = localStorage.getItem("user")
+          ? JSON.parse(localStorage.getItem("user")).plan
+          : "free";
+
+        const plan = data.plans.find((p) => p.id === userPlanId);
+        if (plan) {
+          setCurrentPlan(plan);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching plans:", err);
+    }
+  };
+
+  const fetchUserStats = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/dashboard", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserStats(data);
+      } else if (response.status === 401) {
+        // Authentication issue
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      } else {
+        console.error("Error fetching user stats:", response.status);
+      }
+    } catch (err) {
+      console.error("Error fetching user stats:", err);
+    }
+  };
+
+  const handleRenewInterviews = (newInterviewsCount) => {
+    setUserStats((prev) => ({
+      ...prev,
+      interviewsLeft: newInterviewsCount,
+    }));
+    setError(""); // Clear any previous errors
+  };
 
   const loadTemplateData = () => {
     try {
@@ -53,26 +114,6 @@ const InterviewSetupPage = () => {
       }
     } catch (err) {
       console.error("Error loading template data:", err);
-    }
-  };
-
-  const fetchUserStats = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      const response = await fetch("/api/dashboard", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUserStats(data.userStats);
-      }
-    } catch (err) {
-      console.error("Error fetching user stats:", err);
     }
   };
 
@@ -213,6 +254,8 @@ const InterviewSetupPage = () => {
               data.userPlan || "free"
             } plan.`
           );
+          // Show the renewal modal
+          setShowRenewModal(true);
           // Refresh user stats to show updated limit status
           await fetchUserStats();
         } else {
@@ -324,7 +367,6 @@ const InterviewSetupPage = () => {
           <div className="mb-8">
             <div
               className={`rounded-lg p-4 ${
-                userStats.interviewsTotal === -1 ||
                 userStats.interviewsUsed < userStats.interviewsTotal
                   ? "bg-green-50 border border-green-200"
                   : "bg-red-50 border border-red-200"
@@ -334,14 +376,13 @@ const InterviewSetupPage = () => {
                 <div>
                   <h3
                     className={`font-medium ${
-                      userStats.interviewsTotal === -1 ||
                       userStats.interviewsUsed < userStats.interviewsTotal
                         ? "text-green-800"
                         : "text-red-800"
                     }`}
                   >
-                    {userStats.plan === "weekly" || userStats.plan === "monthly"
-                      ? "Unlimited Plan"
+                    {userStats.isBundle
+                      ? "Bundle Plan"
                       : `${
                           userStats.plan?.charAt(0).toUpperCase() +
                             userStats.plan?.slice(1) || "Free"
@@ -349,21 +390,17 @@ const InterviewSetupPage = () => {
                   </h3>
                   <p
                     className={`text-sm ${
-                      userStats.interviewsTotal === -1 ||
                       userStats.interviewsUsed < userStats.interviewsTotal
                         ? "text-green-600"
                         : "text-red-600"
                     }`}
                   >
                     Interviews Used: {userStats.interviewsUsed} /{" "}
-                    {userStats.interviewsTotal === -1
-                      ? "∞"
-                      : userStats.interviewsTotal}
+                    {userStats.interviewsTotal}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {userStats.interviewsTotal !== -1 &&
-                  userStats.interviewsUsed >= userStats.interviewsTotal ? (
+                  {userStats.interviewsUsed >= userStats.interviewsTotal ? (
                     <button
                       onClick={() => (window.location.href = "/select-plan")}
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
@@ -375,15 +412,14 @@ const InterviewSetupPage = () => {
                   )}
                 </div>
               </div>
-              {userStats.interviewsTotal !== -1 &&
-                userStats.interviewsUsed >= userStats.interviewsTotal && (
-                  <div className="mt-2">
-                    <p className="text-red-600 text-sm">
-                      You've reached your plan limit. Upgrade to continue taking
-                      interviews.
-                    </p>
-                  </div>
-                )}
+              {userStats.interviewsUsed >= userStats.interviewsTotal && (
+                <div className="mt-2">
+                  <p className="text-red-600 text-sm">
+                    You've reached your plan limit. Upgrade to continue taking
+                    interviews.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -774,6 +810,14 @@ const InterviewSetupPage = () => {
           )}
         </div>
       </div>
+      {/* Renewal Modal */}
+      <RenewInterviewsModal
+        isOpen={showRenewModal}
+        onClose={() => setShowRenewModal(false)}
+        currentPlan={currentPlan}
+        onRenew={handleRenewInterviews}
+        hasInterviewsLeft={userStats?.interviewsLeft > 0}
+      />
     </div>
   );
 };

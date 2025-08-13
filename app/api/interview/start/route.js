@@ -36,30 +36,17 @@ export async function POST(request) {
       userId: user._id,
     });
 
-    // Get plan limits
-    let maxInterviews;
-    if (user.plan === "free") {
-      maxInterviews = 1;
-    } else if (user.plan === "starter") {
-      maxInterviews = 5;
-    } else if (user.plan === "weekly" || user.plan === "monthly") {
-      maxInterviews = -1; // unlimited
-    } else {
-      // No plan assigned, default to free tier
-      maxInterviews = 1;
-    }
-
-    // Check if user has exceeded their plan limit
-    if (maxInterviews !== -1 && totalInterviews >= maxInterviews) {
+    // Check if user has any interviews left in their plan
+    if (user.interviewsLeft <= 0) {
       return NextResponse.json(
         {
-          error: `You have reached your plan limit of ${maxInterviews} interview${
-            maxInterviews === 1 ? "" : "s"
-          }. Please upgrade your plan to continue.`,
+          error:
+            "You have used all your available interviews. Please renew your interviews or upgrade your plan to continue.",
           planLimit: true,
           currentUsage: totalInterviews,
-          maxAllowed: maxInterviews,
-          userPlan: user.plan || "free",
+          maxInterviews: 0,
+          planId: user.plan,
+          canRenew: true, // Flag to indicate that interviews can be renewed
         },
         { status: 403 }
       );

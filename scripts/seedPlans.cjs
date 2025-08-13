@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 require("dotenv").config({ path: ".env.local" });
 
-// MongoDB connection
+// MongoDB connection URI
 const MONGODB_URI =
   process.env.MONGODB_URI ||
   "mongodb+srv://prasadshaswat9265:prasadshaswat9265@cluster0.atgekgj.mongodb.net/interviewai?retryWrites=true&w=majority";
 
-// Plan Schema (inline for seeding)
+// Define Plan schema
 const planSchema = new mongoose.Schema(
   {
     id: {
@@ -37,7 +37,7 @@ const planSchema = new mongoose.Schema(
     },
     maxInterviews: {
       type: Number,
-      default: -1, // -1 means unlimited
+      default: 8, // Default bundle size is 8 interviews
     },
     isActive: {
       type: Boolean,
@@ -47,12 +47,21 @@ const planSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    isBundle: {
+      type: Boolean,
+      default: false,
+    },
+    validityMonths: {
+      type: Number,
+      default: 1, // Default validity period in months
+    },
   },
   {
     timestamps: true,
   }
 );
 
+// Use existing model or create new one
 const Plan = mongoose.models.Plan || mongoose.model("Plan", planSchema);
 
 const seedPlans = async () => {
@@ -68,78 +77,84 @@ const seedPlans = async () => {
     const plans = [
       {
         id: "free",
-        name: "Free",
+        name: "Free Plan",
         description: "Get started with basic interview practice",
         monthlyPrice: 0,
         yearlyPrice: 0,
         features: [
-          "1 practice interview per month",
+          "1 interview per month",
           "Basic feedback reports",
           "Common interview questions",
           "Email support",
         ],
         popular: false,
         maxInterviews: 1,
+        isActive: true,
       },
       {
-        id: "starter",
-        name: "Starter",
-        description: "Perfect for regular interview practice",
-        monthlyPrice: 99,
-        yearlyPrice: 990,
+        id: "bundle2",
+        name: "Bundle of 2 Interviews",
+        description: "Perfect for immediate interview preparation",
+        monthlyPrice: 60,
+        yearlyPrice: 60, // One-time payment
         features: [
-          "5 practice interviews per month",
-          "Profile management",
-          "Plan management dashboard",
-          "Basic feedback analysis",
+          "2 practice interviews",
+          "Basic feedback reports",
           "Common interview questions",
           "Email support",
+          "Valid for 3 months",
         ],
         popular: false,
-        maxInterviews: 5,
+        maxInterviews: 2,
+        isActive: true,
+        isBundle: true,
+        validityMonths: 3,
       },
       {
-        id: "weekly",
-        name: "Weekly",
-        description: "Most popular choice for serious job seekers",
-        monthlyPrice: 199,
-        yearlyPrice: 1990,
+        id: "bundle5",
+        name: "Bundle of 5 Interviews",
+        description: "Best value for regular interview practice",
+        monthlyPrice: 150,
+        yearlyPrice: 150, // One-time payment
         features: [
-          "Unlimited practice interviews",
-          "Advanced profile management",
-          "Complete plan management",
-          "Advanced feedback analysis",
-          "Industry-specific questions",
-          "Priority support",
-          "Performance tracking",
+          "5 practice interviews",
+          "Detailed feedback analysis",
+          "Common interview questions",
+          "Priority email support",
+          "Valid for 6 months",
         ],
         popular: true,
-        maxInterviews: -1,
+        maxInterviews: 5,
+        isActive: true,
+        isBundle: true,
+        validityMonths: 6,
       },
       {
-        id: "monthly",
-        name: "Monthly",
-        description: "Best value for comprehensive interview preparation",
-        monthlyPrice: 599,
-        yearlyPrice: 5990,
+        id: "bundle8",
+        name: "Bundle of 8 Interviews",
+        description: "Comprehensive interview preparation package",
+        monthlyPrice: 210,
+        yearlyPrice: 210, // One-time payment
         features: [
-          "Everything in Weekly",
-          "Premium profile management",
-          "Advanced plan management",
-          "Custom interview scenarios",
-          "Team collaboration tools",
-          "API access",
-          "Dedicated account manager",
+          "8 practice interviews",
+          "Comprehensive feedback analysis",
+          "Custom interview questions",
+          "Advanced analytics",
+          "Priority email support",
+          "Valid for 12 months",
         ],
         popular: false,
-        maxInterviews: -1,
+        maxInterviews: 8,
+        isActive: true,
+        isBundle: true,
+        validityMonths: 12,
       },
     ];
 
     await Plan.insertMany(plans);
     console.log("Plans seeded successfully!");
 
-    // Close connection
+    // Close DB connection
     await mongoose.connection.close();
     console.log("Database connection closed");
   } catch (error) {

@@ -2,6 +2,11 @@
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { useParams } from "next/navigation";
+import SpeechRecorder from "@/app/components/SpeechRecorder";
+import {
+  initSpeechToText,
+  isSpeechToTextSupported,
+} from "@/app/lib/whisper-client";
 
 const InterviewSessionPage = () => {
   const params = useParams();
@@ -18,564 +23,80 @@ const InterviewSessionPage = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [feedback, setFeedback] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [speechEnabled, setSpeechEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [speechEnabled, setSpeechEnabled] = useState(true);
+  const [isListening, setIsListening] = useState(false);
   const [speechRate, setSpeechRate] = useState(0.8);
   const [speechVoice, setSpeechVoice] = useState(null);
   const [availableVoices, setAvailableVoices] = useState([]);
-  const [autoReadAnswer, setAutoReadAnswer] = useState(true);
-  const [lastAnswerLength, setLastAnswerLength] = useState(0);
-  const [isListening, setIsListening] = useState(false);
-  const [recognition, setRecognition] = useState(null);
-  const [speechToTextEnabled, setSpeechToTextEnabled] = useState(true);
-  const [speechError, setSpeechError] = useState(null);
-  const [networkRetryCount, setNetworkRetryCount] = useState(0);
-  const [isOfflineMode, setIsOfflineMode] = useState(false);
-  const [networkStatus, setNetworkStatus] = useState(navigator.onLine);
+  const [speechToTextEnabled, setSpeechToTextEnabled] = useState(false);
+  const [autoReadAnswer, setAutoReadAnswer] = useState(false);
   const [bufferMode, setBufferMode] = useState(false);
-  const [recognitionBackoffTime, setRecognitionBackoffTime] = useState(2000);
+  const [speechError, setSpeechError] = useState(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [recognitionBackoffTime, setRecognitionBackoffTime] = useState(0);
+  const [networkRetryCount, setNetworkRetryCount] = useState(0);
+
+  // Speech-to-text state using Hugging Face Whisper model
+  const [isProcessingSpeech, setIsProcessingSpeech] = useState(false);
+
+  // Function to initialize speech recognition with Whisper model
+  const initializeSpeechRecognition = async () => {
+    try {
+      setSpeechError(null);
+      const isSupported = isSpeechToTextSupported();
+
+      if (!isSupported) {
+        setSpeechToTextEnabled(false);
+        setSpeechError("Speech recognition is not supported in your browser.");
+        return;
+      }
+
+      // Initialize the Whisper model
+      await initSpeechToText();
+      setSpeechToTextEnabled(true);
+      console.log("Speech recognition initialized successfully");
+    } catch (error) {
+      console.error("Error initializing speech recognition:", error);
+      setSpeechError(`Error initializing speech recognition: ${error.message}`);
+      setSpeechToTextEnabled(false);
+    }
+  };
+
+  // Function to start listening with SpeechRecorder component
+  const startListening = () => {
+    if (!speechToTextEnabled) return;
+
+    // This is just a placeholder as the actual recording is now handled by the SpeechRecorder component
+    // The user will need to click the "Start Speaking" button which activates the SpeechRecorder
+    console.log(
+      "Speech recognition is ready - click the Start Speaking button to begin"
+    );
+  };
 
   const handleAnswerChange = (value) => {
     setAnswers((prev) => ({
       ...prev,
       [currentQuestionIndex]: value,
     }));
-
-    // Auto-read answer as user types (with debouncing)
-    if (
-      autoReadAnswer &&
-      speechEnabled &&
-      value.length > lastAnswerLength + 10
-    ) {
-      // Read the newly added text (last sentence or phrase)
-      const newText = value.slice(lastAnswerLength);
-      const sentences = newText
-        .split(/[.!?]+/)
-        .filter((s) => s.trim().length > 0);
-      if (sentences.length > 0) {
-        const lastSentence = sentences[sentences.length - 1].trim();
-        if (lastSentence.length > 5) {
-          setTimeout(() => {
-            speakText(lastSentence, { rate: speechRate * 1.2 }); // Slightly faster for auto-read
-          }, 500);
-        }
-      }
-      setLastAnswerLength(value.length);
-    } else if (value.length < lastAnswerLength) {
-      setLastAnswerLength(value.length);
-    }
   };
 
-  // Enhanced Text-to-Speech functionality
-  const loadVoices = () => {
-    if ("speechSynthesis" in window) {
-      const voices = window.speechSynthesis.getVoices();
-      // Filter to English voices only
-      const englishVoices = voices.filter((voice) =>
-        voice.lang.toLowerCase().includes("en")
-      );
-      setAvailableVoices(englishVoices);
+  // Handle transcription from Whisper model
+  const handleTranscriptionComplete = (text) => {
+    if (!text) return;
 
-      // Set default voice (prefer female English voice, then any English voice)
-      const defaultVoice =
-        englishVoices.find(
-          (voice) =>
-            voice.name.toLowerCase().includes("female") ||
-            voice.name.toLowerCase().includes("samantha") ||
-            voice.name.toLowerCase().includes("karen") ||
-            voice.name.toLowerCase().includes("susan")
-        ) ||
-        englishVoices.find((voice) => voice.lang === "en-US") ||
-        englishVoices.find((voice) => voice.lang.includes("en-GB")) ||
-        englishVoices[0];
-      setSpeechVoice(defaultVoice);
-    }
-  };
-
-  const speakText = (text, options = {}) => {
-    if ("speechSynthesis" in window && speechEnabled && text.trim()) {
-      // Stop any ongoing speech
-      window.speechSynthesis.cancel();
-
-      setIsSpeaking(true);
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = options.rate || speechRate;
-      utterance.pitch = options.pitch || 1;
-      utterance.volume = options.volume || 0.8;
-      utterance.lang = "en-US"; // Force English
-
-      if (speechVoice) {
-        utterance.voice = speechVoice;
-      }
-
-      utterance.onend = () => {
-        setIsSpeaking(false);
-      };
-
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-      };
-
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const stopSpeaking = () => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
-  };
-
-  const speakQuestionWithContext = () => {
-    const currentQuestion = interview.questions[currentQuestionIndex];
-    let textToSpeak = `Question ${currentQuestionIndex + 1}: ${
-      currentQuestion.question
-    }`;
-
-    if (currentQuestion.context) {
-      textToSpeak += ` Context: ${currentQuestion.context}`;
-    }
-
-    speakText(textToSpeak);
-  };
-
-  const speakAnswer = () => {
+    // Get current answer and append the transcription
     const currentAnswer = answers[currentQuestionIndex] || "";
-    if (currentAnswer.trim()) {
-      speakText(`Your current answer: ${currentAnswer}`);
-    } else {
-      speakText("You haven't written an answer yet.");
-    }
-  };
+    const newAnswer = currentAnswer ? `${currentAnswer} ${text}` : text;
 
-  const speakCompleteAnswer = () => {
-    const currentAnswer = answers[currentQuestionIndex] || "";
-    if (currentAnswer.trim()) {
-      speakText(currentAnswer); // Read just the answer without prefix
-    } else {
-      speakText("No answer written yet.");
-    }
-  };
-
-  // Speech-to-Text functionality
-  const initializeSpeechRecognition = () => {
-    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognitionInstance = new SpeechRecognition();
-
-      // Configure the recognition instance
-      recognitionInstance.continuous = true;
-      recognitionInstance.interimResults = true;
-      recognitionInstance.lang = "en-US";
-      recognitionInstance.maxAlternatives = 1;
-
-      // Set a shorter timeout to detect network issues faster
-      if (networkStatus === false || isOfflineMode) {
-        // In offline or known poor network, use higher timeout
-        recognitionInstance.timeout = 10000; // 10 seconds before timing out
-      } else {
-        recognitionInstance.timeout = 5000; // 5 seconds in normal mode
-      }
-
-      let finalTranscript = "";
-      let restartAttempts = 0;
-      const maxRestartAttempts = 5; // Increased from 3 to 5
-      let lastRecognitionTime = Date.now();
-      let localBuffer = "";
-
-      recognitionInstance.onstart = () => {
-        setIsListening(true);
-        restartAttempts = 0; // Reset attempts on successful start
-        setSpeechError(null); // Clear any previous errors
-        setNetworkRetryCount(0); // Reset network retry count on successful start
-        lastRecognitionTime = Date.now();
-      };
-
-      recognitionInstance.onresult = (event) => {
-        let interimTranscript = "";
-        lastRecognitionTime = Date.now(); // Update last successful recognition time
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + " ";
-            // Clear buffer as we got a final result
-            localBuffer = "";
-          } else {
-            interimTranscript += transcript;
-            // Update buffer with latest interim result
-            localBuffer = interimTranscript;
-          }
-        }
-
-        // Update the answer with both final and interim results
-        const currentAnswer = answers[currentQuestionIndex] || "";
-        const baseAnswer = currentAnswer
-          .replace(/\[Speaking...\].*$/, "")
-          .trim();
-
-        if (interimTranscript) {
-          handleAnswerChange(
-            baseAnswer +
-              (baseAnswer ? " " : "") +
-              finalTranscript +
-              interimTranscript +
-              " [Speaking...]"
-          );
-        } else if (finalTranscript.trim()) {
-          handleAnswerChange(
-            baseAnswer + (baseAnswer ? " " : "") + finalTranscript.trim()
-          );
-        }
-      };
-
-      recognitionInstance.onerror = (event) => {
-        console.error("Speech recognition error:", event.error);
-
-        // Calculate time since last successful recognition
-        const timeSinceLastSuccess = Date.now() - lastRecognitionTime;
-
-        // Handle different types of errors
-        switch (event.error) {
-          case "network":
-            console.log("Network error - check internet connection");
-
-            // If we have local buffer content, use it
-            if (localBuffer && localBuffer.trim().length > 0) {
-              const currentAnswer = answers[currentQuestionIndex] || "";
-              const baseAnswer = currentAnswer
-                .replace(/\[Speaking...\].*$/, "")
-                .trim();
-
-              // Add the buffered content to the answer
-              handleAnswerChange(
-                baseAnswer + (baseAnswer ? " " : "") + localBuffer.trim()
-              );
-
-              setSpeechError(
-                "Limited connectivity - Using locally buffered text."
-              );
-
-              // Clear buffer after using it
-              localBuffer = "";
-            } else {
-              setSpeechError(
-                "Network connection issue. Using offline mode. Continue speaking."
-              );
-            }
-
-            setIsOfflineMode(true);
-            setIsListening(false);
-
-            // Implement adaptive progressive retry with increased backoff
-            if (networkRetryCount < 5) {
-              // Increased from 3 to 5
-              // Exponential backoff with jitter
-              const baseDelay = Math.pow(1.8, networkRetryCount) * 1000; // 1.8s, 3.24s, 5.8s, 10.5s, 18.9s
-              const jitter = Math.random() * 1000; // Add up to 1s of jitter
-              const retryDelay = baseDelay + jitter;
-
-              // Update the backoff time for display
-              setRecognitionBackoffTime(Math.round(retryDelay / 1000));
-
-              setTimeout(() => {
-                if (speechToTextEnabled) {
-                  console.log(
-                    `Retrying speech recognition (attempt ${
-                      networkRetryCount + 1
-                    })`
-                  );
-                  setNetworkRetryCount((prev) => prev + 1);
-                  setSpeechError(
-                    `Retrying connection... (attempt ${
-                      networkRetryCount + 1
-                    }/5)`
-                  );
-
-                  // Try to detect network status
-                  if (navigator.onLine) {
-                    // Even if browser reports online, use buffer mode
-                    setBufferMode(true);
-                    startListening();
-                  } else {
-                    // If definitely offline, wait longer
-                    setTimeout(() => startListening(), 3000);
-                  }
-                }
-              }, retryDelay);
-            } else {
-              // After max retries, switch to manual mode
-              setSpeechError(
-                "Network connection unstable. Continue typing your answer."
-              );
-              setBufferMode(true); // Enable buffer mode for future attempts
-              setTimeout(() => {
-                setSpeechError(null);
-              }, 5000);
-            }
-            break;
-
-          case "no-speech":
-            // Don't show an error for no-speech
-            setSpeechError(null);
-
-            // Only restart if we're still supposed to be listening and haven't exceeded attempts
-            if (restartAttempts < maxRestartAttempts) {
-              restartAttempts++;
-              setTimeout(() => {
-                if (speechToTextEnabled && !isListening) {
-                  console.log(
-                    `Restarting speech recognition (attempt ${restartAttempts})`
-                  );
-                  startListening();
-                }
-              }, 1000);
-            }
-            break;
-
-          case "audio-capture":
-            console.log("Audio capture error - check microphone permissions");
-            setSpeechError(
-              "Microphone access error. Please check your microphone and permissions."
-            );
-            break;
-
-          case "not-allowed":
-            console.log(
-              "Microphone access denied - please allow microphone permission"
-            );
-            setSpeechError(
-              "Microphone access denied. Please allow microphone permission and refresh the page."
-            );
-            setSpeechToTextEnabled(false);
-            break;
-
-          case "service-not-allowed":
-            console.log("Speech service not allowed - check browser settings");
-            setSpeechError(
-              "Speech recognition service blocked. Please check your browser settings."
-            );
-            setSpeechToTextEnabled(false);
-            break;
-
-          case "aborted":
-            setSpeechError(null); // Clear error for user-initiated stops
-            break;
-
-          default:
-            console.log(`Speech recognition error: ${event.error}`);
-
-            // For other errors, try to restart if offline mode is active
-            if (isOfflineMode || bufferMode) {
-              setSpeechError("Reconnecting speech service...");
-              setTimeout(() => {
-                if (speechToTextEnabled && !isListening) {
-                  startListening();
-                }
-              }, 2000);
-            } else {
-              setSpeechError(
-                `Speech recognition error: ${event.error}. Please try again.`
-              );
-            }
-        }
-      };
-
-      recognitionInstance.onend = () => {
-        // Clean up any [Speaking...] indicators
-        const currentAnswer = answers[currentQuestionIndex] || "";
-        const cleanAnswer = currentAnswer
-          .replace(/\[Speaking...\].*$/, "")
-          .trim();
-
-        if (cleanAnswer !== currentAnswer) {
-          handleAnswerChange(cleanAnswer);
-        }
-
-        // Check if we have buffer content to save before stopping
-        if (localBuffer && localBuffer.trim().length > 0 && isOfflineMode) {
-          const baseAnswer = cleanAnswer;
-          handleAnswerChange(
-            baseAnswer + (baseAnswer ? " " : "") + localBuffer.trim()
-          );
-          localBuffer = "";
-        }
-
-        // Detect if recognition ended but we should be listening
-        // This could happen due to transient issues
-        const shouldBeListening = isListening;
-        setIsListening(false);
-
-        // Reset final transcript for next session
-        finalTranscript = "";
-
-        // If we should be listening but not in a network error state
-        // try to restart the recognition
-        if (
-          shouldBeListening &&
-          speechToTextEnabled &&
-          !document.hidden && // Don't restart if page is in background
-          networkRetryCount < 2
-        ) {
-          // Only auto-restart for the first few attempts
-
-          // Wait a moment then try to restart
-          setTimeout(() => {
-            if (speechToTextEnabled && !isListening) {
-              console.log("Recognition ended unexpectedly, restarting...");
-              startListening();
-            }
-          }, 300);
-        }
-      };
-
-      setRecognition(recognitionInstance);
-    } else {
-      console.log("Speech recognition not supported in this browser");
-      setSpeechToTextEnabled(false);
-    }
-  };
-
-  const startListening = () => {
-    if (recognition && speechToTextEnabled && !isListening) {
-      try {
-        // Check if offline mode should be used
-        if (isOfflineMode || !navigator.onLine) {
-          setBufferMode(true);
-          setSpeechError("Using offline mode with local buffering");
-        } else {
-          setBufferMode(false);
-        }
-
-        // Check if recognition is already running
-        if (recognition.state === "listening") {
-          recognition.stop();
-          setTimeout(() => {
-            recognition.start();
-          }, 100);
-        } else {
-          recognition.start();
-        }
-      } catch (error) {
-        console.error("Error starting speech recognition:", error);
-        setIsListening(false);
-
-        // If it's already started, just update the state
-        if (error.message && error.message.includes("already started")) {
-          setIsListening(true);
-        } else {
-          // For other errors, reinitialize speech recognition
-          setTimeout(() => {
-            initializeSpeechRecognition();
-            setTimeout(() => {
-              if (speechToTextEnabled) startListening();
-            }, 500);
-          }, 1000);
-        }
-      }
-    }
-  };
-
-  const stopListening = () => {
-    if (recognition) {
-      try {
-        // If we have buffer content, add it to the answer
-        if (localBuffer && localBuffer.trim().length > 0) {
-          const currentAnswer = answers[currentQuestionIndex] || "";
-          const baseAnswer = currentAnswer
-            .replace(/\[Speaking...\].*$/, "")
-            .trim();
-
-          handleAnswerChange(
-            baseAnswer + (baseAnswer ? " " : "") + localBuffer.trim()
-          );
-          localBuffer = "";
-        }
-
-        if (isListening) {
-          recognition.stop();
-        }
-      } catch (error) {
-        console.error("Error stopping speech recognition:", error);
-      } finally {
-        setIsListening(false);
-        setSpeechError(null);
-      }
-    }
-  };
-
-  const toggleListening = () => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
-    }
+    handleAnswerChange(newAnswer);
   };
 
   const clearAnswer = () => {
     handleAnswerChange("");
-    setLastAnswerLength(0);
   };
 
-  // Load voices when component mounts
-  useEffect(() => {
-    if ("speechSynthesis" in window) {
-      loadVoices();
-      // Chrome loads voices asynchronously
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-
-    initializeSpeechRecognition();
-
-    // Add network status monitoring
-    const handleOnline = () => {
-      console.log("Network connection restored");
-      setNetworkStatus(true);
-      setSpeechError(
-        "Network connection restored. Speech recognition available."
-      );
-      setIsOfflineMode(false);
-      setNetworkRetryCount(0);
-
-      // If we were in offline mode, restart recognition
-      if (isOfflineMode) {
-        setTimeout(() => {
-          if (!isListening && speechToTextEnabled) {
-            startListening();
-          }
-        }, 1000);
-      }
-
-      // Clear the error message after a moment
-      setTimeout(() => {
-        setSpeechError(null);
-      }, 3000);
-    };
-
-    const handleOffline = () => {
-      console.log("Network connection lost");
-      setNetworkStatus(false);
-      setIsOfflineMode(true);
-      setSpeechError(
-        "Network connection lost. Using offline mode with local buffering."
-      );
-    };
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    // Initialize network status
-    setNetworkStatus(navigator.onLine);
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, [isOfflineMode, isListening, speechToTextEnabled]);
-
+  // Load interview data when component mounts
   useEffect(() => {
     fetchInterview();
   }, [interviewId]);
@@ -589,19 +110,6 @@ const InterviewSessionPage = () => {
     }
     return () => clearInterval(interval);
   }, [sessionStarted, sessionEnded, startTime]);
-
-  // Auto-read question when it changes
-  useEffect(() => {
-    if (sessionStarted && !sessionEnded && interview && speechEnabled) {
-      const currentQuestion = interview.questions[currentQuestionIndex];
-      if (currentQuestion) {
-        // Small delay to ensure UI is ready
-        setTimeout(() => {
-          speakText(currentQuestion.question);
-        }, 500);
-      }
-    }
-  }, [currentQuestionIndex, sessionStarted, speechEnabled]);
 
   const fetchInterview = async () => {
     try {
@@ -644,21 +152,18 @@ const InterviewSessionPage = () => {
 
   const nextQuestion = () => {
     if (currentQuestionIndex < interview.questions.length - 1) {
-      stopSpeaking(); // Stop current speech before moving to next question
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
 
   const previousQuestion = () => {
     if (currentQuestionIndex > 0) {
-      stopSpeaking(); // Stop current speech before moving to previous question
       setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 
   const endSession = async () => {
     try {
-      stopSpeaking(); // Stop any ongoing speech
       const token = localStorage.getItem("token");
       const response = await fetch(`/api/interview/${interviewId}/complete`, {
         method: "POST",
@@ -685,6 +190,33 @@ const InterviewSessionPage = () => {
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  // Dummy speech functions that are not used anymore but might be referenced
+  const speakText = (text) => {
+    console.log("Speech functionality has been replaced with Whisper");
+  };
+
+  const speakQuestionWithContext = () => {
+    console.log("Speech functionality has been replaced with Whisper");
+  };
+
+  const toggleListening = () => {
+    console.log("Speech functionality has been replaced with Whisper");
+    setIsListening((prev) => !prev);
+  };
+
+  const speakCompleteAnswer = () => {
+    console.log("Speech functionality has been replaced with Whisper");
+  };
+
+  const speakAnswer = () => {
+    console.log("Speech functionality has been replaced with Whisper");
+  };
+
+  const stopSpeaking = () => {
+    console.log("Speech functionality has been replaced with Whisper");
+    setIsSpeaking(false);
   };
 
   const fetchInterviewWithFeedback = async () => {
@@ -857,113 +389,14 @@ const InterviewSessionPage = () => {
               </div>
             </div>
 
-            {/* Voice Settings Panel */}
-            {availableVoices.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h3 className="font-medium text-blue-900 mb-3">
-                  🎙️ Voice Settings (English Only)
-                </h3>
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <label className="block text-blue-800 mb-1">Voice:</label>
-                    <select
-                      value={speechVoice?.name || ""}
-                      onChange={(e) => {
-                        const voice = availableVoices.find(
-                          (v) => v.name === e.target.value
-                        );
-                        setSpeechVoice(voice);
-                      }}
-                      className="w-full text-xs border rounded px-2 py-1"
-                    >
-                      {availableVoices.map((voice, index) => (
-                        <option key={index} value={voice.name}>
-                          {voice.name} ({voice.lang})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-blue-800 mb-1">
-                      Speech Rate:
-                    </label>
-                    <select
-                      value={speechRate}
-                      onChange={(e) =>
-                        setSpeechRate(parseFloat(e.target.value))
-                      }
-                      className="w-full text-xs border rounded px-2 py-1"
-                    >
-                      <option value={0.5}>Very Slow (0.5x)</option>
-                      <option value={0.7}>Slow (0.7x)</option>
-                      <option value={0.8}>Normal (0.8x)</option>
-                      <option value={1.0}>Fast (1x)</option>
-                      <option value={1.2}>Faster (1.2x)</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center justify-center space-x-4 flex-wrap gap-2">
-                  <button
-                    onClick={() =>
-                      speakText(
-                        "This is how the voice will sound during your interview. All speech will be in English."
-                      )
-                    }
-                    className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                  >
-                    🔊 Test Voice
-                  </button>
-                  <label className="flex items-center space-x-2 text-xs">
-                    <input
-                      type="checkbox"
-                      checked={autoReadAnswer}
-                      onChange={(e) => setAutoReadAnswer(e.target.checked)}
-                      className="rounded"
-                    />
-                    <span>Auto-read answers</span>
-                  </label>
-                  <label className="flex items-center space-x-2 text-xs">
-                    <input
-                      type="checkbox"
-                      checked={speechToTextEnabled}
-                      onChange={(e) => setSpeechToTextEnabled(e.target.checked)}
-                      className="rounded"
-                    />
-                    <span>Enable speech-to-text</span>
-                  </label>
-                  <label className="flex items-center space-x-2 text-xs">
-                    <input
-                      type="checkbox"
-                      checked={bufferMode}
-                      onChange={(e) => {
-                        setBufferMode(e.target.checked);
-                        if (e.target.checked) {
-                          setSpeechError(
-                            "Buffer mode enabled for low bandwidth connections"
-                          );
-                          setTimeout(() => setSpeechError(null), 3000);
-                        }
-                      }}
-                      className="rounded"
-                    />
-                    <span title="Enable this for unstable internet connections">
-                      Low bandwidth mode
-                    </span>
-                  </label>
-                </div>
-              </div>
-            )}
-
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <h3 className="font-medium text-blue-900 mb-2">
                 Interview Tips:
               </h3>
               <ul className="text-blue-800 text-sm text-left list-disc list-inside space-y-1">
-                <li>Questions will be read aloud automatically in English</li>
-                <li>
-                  You can speak your answers - they'll be converted to text
-                </li>
-                <li>Use the microphone button to start/stop voice input</li>
+                <li>Questions will be presented one at a time</li>
+                <li>You can type your answers or use speech recognition</li>
+                <li>Use the microphone button to record your speech</li>
                 <li>You can also type manually if preferred</li>
                 <li>Take your time to think before answering</li>
                 <li>Use specific examples from your experience</li>
@@ -1211,14 +644,6 @@ const InterviewSessionPage = () => {
               {/* Answer Input */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Your Answer:{" "}
-                    {isListening && (
-                      <span className="text-green-600 animate-pulse">
-                        🎙️ Listening...
-                      </span>
-                    )}
-                  </label>
                   <div className="flex items-center space-x-2">
                     <label className="flex items-center space-x-1 text-xs">
                       <input
@@ -1247,34 +672,6 @@ const InterviewSessionPage = () => {
 
                 {/* Speech Controls */}
                 <div className="mb-3 flex items-center space-x-3 flex-wrap gap-2">
-                  <button
-                    onClick={toggleListening}
-                    disabled={!speechToTextEnabled}
-                    className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      isListening
-                        ? "bg-red-600 text-white hover:bg-red-700 animate-pulse"
-                        : speechToTextEnabled
-                        ? isOfflineMode
-                          ? "bg-orange-600 text-white hover:bg-orange-700"
-                          : "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    }`}
-                  >
-                    {isListening ? (
-                      <>
-                        <div className="w-2 h-2 bg-white rounded-full mr-2 animate-ping"></div>
-                        Stop Speaking
-                      </>
-                    ) : (
-                      <>
-                        🎙️{" "}
-                        {isOfflineMode
-                          ? "Start Speaking (Offline Mode)"
-                          : "Start Speaking"}
-                      </>
-                    )}
-                  </button>
-
                   <button
                     onClick={clearAnswer}
                     className="px-3 py-2 bg-gray-500 text-white rounded-lg text-sm hover:bg-gray-600"
@@ -1363,26 +760,26 @@ const InterviewSessionPage = () => {
                   onChange={(e) => handleAnswerChange(e.target.value)}
                   rows={8}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder={
-                    speechToTextEnabled
-                      ? "Click 'Start Speaking' to speak your answer, or type here manually..."
-                      : "Type your answer here... Enable speech-to-text in settings to speak your answers."
-                  }
+                  placeholder="Type your answer here..."
                 />
+
+                {/* Whisper-based Speech-to-Text Component */}
+                <div className="mt-4 flex justify-center">
+                  <SpeechRecorder
+                    onTranscriptionComplete={handleTranscriptionComplete}
+                    isDisabled={!sessionStarted || sessionEnded}
+                  />
+                </div>
 
                 <div className="mt-2 flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <p className="text-xs text-gray-500">
-                      💡{" "}
-                      {isListening
-                        ? "Speak clearly - your words are being converted to text"
-                        : speechToTextEnabled
-                        ? "Click the microphone to speak your answer"
-                        : "Type your answer or re-enable speech-to-text"}
+                      💡 Use the microphone button to record your answer with
+                      Whisper AI speech recognition
                     </p>
-                    {isSpeaking && (
+                    {isProcessingSpeech && (
                       <span className="text-xs text-blue-600 animate-pulse">
-                        🔊 Speaking...
+                        🎙️ Processing speech...
                       </span>
                     )}
                   </div>

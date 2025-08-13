@@ -30,11 +30,19 @@ const PlanSchema = new mongoose.Schema(
     },
     maxInterviews: {
       type: Number,
-      default: -1, // -1 means unlimited
+      default: 8, // Default bundle size is 8 interviews
     },
     isActive: {
       type: Boolean,
       default: true,
+    },
+    isBundle: {
+      type: Boolean,
+      default: false,
+    },
+    validityMonths: {
+      type: Number,
+      default: 1, // Default validity period in months
     },
     createdAt: {
       type: Date,

@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { GiHamburgerMenu } from "react-icons/gi";
+import { IoMdClose } from "react-icons/io";
 
 const AnalyticsPage = () => {
   const [user, setUser] = useState(null);
@@ -10,6 +13,7 @@ const AnalyticsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [timeRange, setTimeRange] = useState("all"); // all, 30d, 7d
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchUserData();
@@ -155,88 +159,214 @@ const AnalyticsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-red-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading analytics...</p>
+          <AiOutlineLoading3Quarters className="animate-spin h-16 w-16 mx-auto text-pink-600 mb-4" />
+          <p className="text-gray-700 text-lg">Loading analytics...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-red-100">
       <Head>
         <title>Analytics - InterviewAI</title>
         <meta
           name="description"
           content="Track your interview performance and progress"
         />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 
       {/* Navigation */}
-      <nav className="bg-white shadow-lg border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="bg-white shadow-md sticky top-0 z-50">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link href="/dashboard" className="flex items-center">
-                <span className="text-2xl font-bold text-blue-600">
-                  InterviewAI
-                </span>
-              </Link>
-              <div className="hidden md:ml-6 md:flex md:space-x-8">
-                <Link
-                  href="/dashboard"
-                  className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/practice"
-                  className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium"
-                >
-                  Practice
-                </Link>
-                <Link
-                  href="/analytics"
-                  className="text-blue-600 border-b-2 border-blue-600 px-3 py-2 text-sm font-medium"
-                >
-                  Analytics
-                </Link>
-                <Link
-                  href="/resources"
-                  className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium"
-                >
-                  Resources
+              <div className="flex-shrink-0 flex items-center">
+                <Link href="/dashboard" className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center mr-2">
+                    <span className="text-white font-bold">IA</span>
+                  </div>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                    InterviewAI
+                  </h1>
                 </Link>
               </div>
+              <div className="hidden md:ml-10 md:flex md:space-x-8">
+                {[
+                  {
+                    name: "Dashboard",
+                    href: "/dashboard",
+                    active: false,
+                  },
+                  {
+                    name: "Practice",
+                    href: "/practice",
+                    active: false,
+                  },
+                  {
+                    name: "Analytics",
+                    href: "/analytics",
+                    active: true,
+                  },
+                  {
+                    name: "Resources",
+                    href: "/resources",
+                    active: false,
+                  },
+                ].map((item) => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className={`inline-flex items-center px-1 pt-1 transition-colors duration-200 ${
+                      item.active
+                        ? "text-pink-600 border-b-2 border-pink-600"
+                        : "text-gray-700 hover:text-pink-600"
+                    }`}
+                  >
+                    {item.name}
+                  </a>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">
-                👨‍💼 {user?.firstName} {user?.lastName}
-              </span>
+
+            <div className="hidden md:flex items-center space-x-4">
+              <button
+                onClick={() => (window.location.href = "/profile-management")}
+                className="flex items-center space-x-2 bg-pink-50 px-3 py-2 rounded-xl hover:bg-pink-100 transition-colors duration-200 cursor-pointer"
+              >
+                <span className="text-2xl">👨‍💼</span>
+                <div className="text-sm">
+                  <div className="font-medium text-gray-900">
+                    {user?.firstName} {user?.lastName}
+                  </div>
+                </div>
+              </button>
+            </div>
+            {/* Mobile menu button */}
+            <div className="flex items-center md:hidden">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-pink-600 focus:outline-none"
+              >
+                {mobileMenuOpen ? (
+                  <IoMdClose className="block h-6 w-6" aria-hidden="true" />
+                ) : (
+                  <GiHamburgerMenu
+                    className="block h-6 w-6"
+                    aria-hidden="true"
+                  />
+                )}
+              </button>
             </div>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-t border-gray-200 px-2 pt-2 pb-3 space-y-1">
+            {[
+              {
+                name: "Dashboard",
+                href: "/dashboard",
+                active: false,
+              },
+              {
+                name: "Practice",
+                href: "/practice",
+                active: false,
+              },
+              {
+                name: "Analytics",
+                href: "/analytics",
+                active: true,
+              },
+              {
+                name: "Resources",
+                href: "/resources",
+                active: false,
+              },
+            ].map((item) => (
+              <a
+                key={item.name}
+                href={item.href}
+                className={`block px-3 py-2 rounded-md text-base font-medium ${
+                  item.active
+                    ? "text-pink-600 bg-pink-50"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-pink-600"
+                }`}
+              >
+                {item.name}
+              </a>
+            ))}
+            <div className="pt-4 pb-3 border-t border-gray-200">
+              <div className="flex items-center px-3">
+                <div className="flex-shrink-0">
+                  <span className="text-2xl">👨‍💼</span>
+                </div>
+                <div className="ml-3">
+                  <div className="text-base font-medium text-gray-800">
+                    {user?.firstName} {user?.lastName}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 space-y-1 px-2">
+                <a
+                  href="/profile-management"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50"
+                >
+                  Your Profile
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      <main className="max-w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="py-2">
           {/* Header */}
           <div className="mb-8">
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg shadow-lg p-6 text-white">
-              <h1 className="text-3xl font-bold mb-2">
+            <div className="bg-gradient-to-r from-pink-500 to-purple-500 rounded-2xl shadow-lg p-6 sm:p-8 text-white">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
                 Performance Analytics 📊
               </h1>
-              <p className="text-purple-100">
+              <p className="text-pink-100">
                 Track your progress and identify areas for improvement
               </p>
             </div>
           </div>
 
+          {/* Time Range Filter */}
+          <div className="flex justify-end mb-6">
+            <div className="inline-flex rounded-lg shadow-sm">
+              {["all", "30d", "7d"].map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  className={`px-4 py-2 text-sm font-medium ${
+                    timeRange === range
+                      ? "bg-pink-600 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  } ${range === "all" ? "rounded-l-lg" : ""} ${
+                    range === "7d" ? "rounded-r-lg" : ""
+                  } border border-gray-200`}
+                >
+                  {range === "all"
+                    ? "All Time"
+                    : range === "30d"
+                    ? "Last 30 Days"
+                    : "Last 7 Days"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Error State */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
               <div className="flex">
                 <div className="text-red-400">
                   <svg
@@ -261,7 +391,7 @@ const AnalyticsPage = () => {
 
           {/* No Data State */}
           {!analytics || analytics.totalCompleted === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
+            <div className="bg-white rounded-2xl shadow-md p-8 text-center">
               <div className="text-6xl mb-4">📈</div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 No Analytics Data Available
@@ -271,7 +401,7 @@ const AnalyticsPage = () => {
                 progress tracking.
               </p>
               <Link href="/interview-setup">
-                <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                <button className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-2 rounded-xl hover:from-pink-600 hover:to-purple-600 transition-colors duration-300 shadow-md">
                   Start Your First Interview
                 </button>
               </Link>
@@ -280,16 +410,16 @@ const AnalyticsPage = () => {
             <>
               {/* Overview Stats */}
               {dashboardData && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                  <div className="bg-white rounded-lg shadow p-6 text-center">
-                    <div className="text-3xl font-bold text-blue-600">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                  <div className="bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-lg transition-shadow duration-300">
+                    <div className="text-3xl font-bold text-pink-600">
                       {dashboardData.stats.totalInterviews}
                     </div>
                     <div className="text-sm text-gray-600 mt-1">
                       Interviews Completed
                     </div>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-6 text-center">
+                  <div className="bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-lg transition-shadow duration-300">
                     <div
                       className={`text-3xl font-bold ${getScoreColor(
                         dashboardData.stats.averageScore
@@ -301,7 +431,7 @@ const AnalyticsPage = () => {
                       Average Score
                     </div>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-6 text-center">
+                  <div className="bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-lg transition-shadow duration-300">
                     <div className="text-3xl font-bold text-green-600">
                       {dashboardData.stats.totalPracticeHours}h
                     </div>
@@ -309,7 +439,7 @@ const AnalyticsPage = () => {
                       Practice Hours
                     </div>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-6 text-center">
+                  <div className="bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-lg transition-shadow duration-300">
                     <div
                       className={`text-3xl font-bold ${
                         analytics.improvementTrend > 0
@@ -329,9 +459,9 @@ const AnalyticsPage = () => {
                 </div>
               )}
 
-              {/* Performance by Interview Type */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div className="bg-white rounded-lg shadow">
+              {/* Performance by Interview Type & Difficulty */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
+                <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
                   <div className="px-6 py-4 border-b border-gray-200">
                     <h3 className="text-lg font-medium text-gray-900">
                       Performance by Type
@@ -358,14 +488,14 @@ const AnalyticsPage = () => {
                                   {data.average.toFixed(1)}/10
                                 </span>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="w-full bg-gray-200 rounded-full h-2.5">
                                 <div
-                                  className={`h-2 rounded-full ${
+                                  className={`h-2.5 rounded-full ${
                                     data.average >= 8
-                                      ? "bg-green-500"
+                                      ? "bg-gradient-to-r from-green-400 to-green-600"
                                       : data.average >= 6
-                                      ? "bg-yellow-500"
-                                      : "bg-red-500"
+                                      ? "bg-gradient-to-r from-yellow-400 to-yellow-600"
+                                      : "bg-gradient-to-r from-red-400 to-red-600"
                                   }`}
                                   style={{
                                     width: `${(data.average / 10) * 100}%`,
@@ -384,8 +514,7 @@ const AnalyticsPage = () => {
                   </div>
                 </div>
 
-                {/* Performance by Difficulty */}
-                <div className="bg-white rounded-lg shadow">
+                <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
                   <div className="px-6 py-4 border-b border-gray-200">
                     <h3 className="text-lg font-medium text-gray-900">
                       Performance by Difficulty
@@ -412,14 +541,14 @@ const AnalyticsPage = () => {
                                   {data.average.toFixed(1)}/10
                                 </span>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="w-full bg-gray-200 rounded-full h-2.5">
                                 <div
-                                  className={`h-2 rounded-full ${
+                                  className={`h-2.5 rounded-full ${
                                     data.average >= 8
-                                      ? "bg-green-500"
+                                      ? "bg-gradient-to-r from-green-400 to-green-600"
                                       : data.average >= 6
-                                      ? "bg-yellow-500"
-                                      : "bg-red-500"
+                                      ? "bg-gradient-to-r from-yellow-400 to-yellow-600"
+                                      : "bg-gradient-to-r from-red-400 to-red-600"
                                   }`}
                                   style={{
                                     width: `${(data.average / 10) * 100}%`,
@@ -440,7 +569,7 @@ const AnalyticsPage = () => {
               </div>
 
               {/* Recent Performance Trend */}
-              <div className="bg-white rounded-lg shadow mb-8">
+              <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300 mb-8">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h3 className="text-lg font-medium text-gray-900">
                     Recent Performance
@@ -451,10 +580,10 @@ const AnalyticsPage = () => {
                     {analytics.recentInterviews.map((interview, index) => (
                       <div
                         key={interview._id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-pink-50 hover:border-pink-100 transition-colors duration-200"
                       >
-                        <div className="flex items-center space-x-4">
-                          <div className="text-sm font-medium text-gray-500">
+                        <div className="flex items-center space-x-4 mb-2 sm:mb-0">
+                          <div className="bg-white w-8 h-8 rounded-full flex items-center justify-center shadow-sm text-gray-500 text-sm font-medium">
                             #{analytics.recentInterviews.length - index}
                           </div>
                           <div>
@@ -468,16 +597,16 @@ const AnalyticsPage = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 sm:space-x-4">
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${getScoreBgColor(
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${getScoreBgColor(
                               interview.score
                             )} ${getScoreColor(interview.score)}`}
                           >
                             {interview.score}/10
                           </span>
                           <Link href={`/interview-details/${interview._id}`}>
-                            <button className="text-blue-600 hover:text-blue-900 text-sm">
+                            <button className="bg-white text-pink-600 hover:text-pink-700 border border-pink-200 hover:border-pink-300 rounded-lg text-sm px-4 py-1.5 shadow-sm transition-colors duration-200">
                               View Details
                             </button>
                           </Link>
@@ -489,7 +618,7 @@ const AnalyticsPage = () => {
               </div>
 
               {/* Recommendations */}
-              <div className="bg-white rounded-lg shadow">
+              <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h3 className="text-lg font-medium text-gray-900">
                     Improvement Recommendations
@@ -499,9 +628,9 @@ const AnalyticsPage = () => {
                   <div className="space-y-4">
                     {/* Generate recommendations based on performance */}
                     {analytics.averageScore < 6 && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                         <div className="flex">
-                          <div className="text-red-400">
+                          <div className="text-red-400 flex-shrink-0">
                             <svg
                               className="h-5 w-5"
                               fill="currentColor"
@@ -529,9 +658,9 @@ const AnalyticsPage = () => {
                     )}
 
                     {analytics.improvementTrend < 0 && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                         <div className="flex">
-                          <div className="text-yellow-400">
+                          <div className="text-yellow-400 flex-shrink-0">
                             <svg
                               className="h-5 w-5"
                               fill="currentColor"
@@ -559,9 +688,9 @@ const AnalyticsPage = () => {
                     )}
 
                     {analytics.improvementTrend > 1 && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                         <div className="flex">
-                          <div className="text-green-400">
+                          <div className="text-green-400 flex-shrink-0">
                             <svg
                               className="h-5 w-5"
                               fill="currentColor"
@@ -587,9 +716,9 @@ const AnalyticsPage = () => {
                       </div>
                     )}
 
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                       <div className="flex">
-                        <div className="text-blue-400">
+                        <div className="text-blue-400 flex-shrink-0">
                           <svg
                             className="h-5 w-5"
                             fill="currentColor"

@@ -1,6 +1,7 @@
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import Interview from "@/models/Interview";
+import Plan from "@/models/Plan";
 import jwt from "jsonwebtoken";
 
 export async function GET(request) {
@@ -69,27 +70,28 @@ export async function GET(request) {
     };
 
     // Format userStats for dashboard
+    // Get plan details
+    const plan = await Plan.findOne({ id: user.plan });
+
     const userStats = {
       name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User",
-      plan: user.plan || "",
-      planPrice: "", // You can add pricing logic here later
+      plan: plan ? plan.name : "Free Plan",
+      planPrice: plan ? `₹${plan.monthlyPrice}` : "₹0",
       avatar: "👨‍💼",
       interviewsUsed: totalInterviews, // Count all interviews for plan limits
-      interviewsTotal:
-        user.plan === "free" ? 1 : user.plan === "starter" ? 5 : -1, // -1 for unlimited (weekly/monthly)
+      interviewsLeft: user.interviewsLeft,
+      interviewsTotal: plan ? plan.maxInterviews : 1,
       averageScore: stats.averageScore,
       practiceHours: stats.totalPracticeHours,
       skillsImproved: stats.skillsImproved,
-      trialActive: user.subscriptionStatus === "trial",
-      trialDaysLeft: user.trialEndsAt
-        ? Math.max(
-            0,
-            Math.ceil(
-              (new Date(user.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)
-            )
-          )
-        : 0,
-      nextBillingDate: "", // You can add billing logic here later
+      isBundle: plan ? plan.isBundle : false,
+      validityMonths: plan && plan.isBundle ? plan.validityMonths : 1,
+      nextBillingDate:
+        user.plan === "free"
+          ? new Date(
+              new Date().setMonth(new Date().getMonth() + 1)
+            ).toLocaleDateString()
+          : "",
       memberSince: user.createdAt
         ? new Date(user.createdAt).toLocaleDateString()
         : "",
