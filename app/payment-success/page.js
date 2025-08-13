@@ -1,10 +1,30 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-const PaymentSuccessPage = () => {
+// Loading component for Suspense fallback
+function PaymentPageLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-red-100 flex flex-col items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Loading payment page...
+          </h2>
+          <p className="text-gray-600">
+            Please wait while we prepare your payment confirmation.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// The actual payment success content
+function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [paymentStatus, setPaymentStatus] = useState("loading");
@@ -160,6 +180,15 @@ const PaymentSuccessPage = () => {
         )}
       </div>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+const PaymentSuccessPage = () => {
+  return (
+    <Suspense fallback={<PaymentPageLoading />}>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 };
 
