@@ -10,7 +10,7 @@ let speechRecognitionModule = null;
 const loadSpeechRecognition = async () => {
   if (!speechRecognitionModule && isBrowser()) {
     try {
-      speechRecognitionModule = await import("@/app/lib/whisper-client");
+      // ...existing code...
     } catch (error) {
       console.error("Error loading speech recognition:", error);
       return null;
@@ -200,7 +200,7 @@ const SpeechRecorder = ({ onTranscriptionComplete, isDisabled = false }) => {
 
       {isProcessing && (
         <div className="text-blue-500 text-sm mt-2 animate-pulse">
-          Transcribing your speech with Whisper AI...
+          Transcribing your speech...
         </div>
       )}
     </div>

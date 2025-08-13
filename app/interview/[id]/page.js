@@ -3,25 +3,6 @@ import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { useParams } from "next/navigation";
 import SpeechRecorder from "@/app/components/SpeechRecorder";
-// Remove direct imports of whisper-client
-// Import the browser utility instead
-import { isBrowser } from "@/app/lib/browser-utils";
-
-// Will hold dynamically imported speech recognition functions
-let speechRecognitionModule = null;
-
-// Function to dynamically import the speech recognition module
-const loadSpeechRecognition = async () => {
-  if (!speechRecognitionModule && isBrowser()) {
-    try {
-      speechRecognitionModule = await import("@/app/lib/whisper-client");
-    } catch (error) {
-      console.error("Error loading speech recognition:", error);
-      return null;
-    }
-  }
-  return speechRecognitionModule;
-};
 
 const InterviewSessionPage = () => {
   const params = useParams();
@@ -52,42 +33,6 @@ const InterviewSessionPage = () => {
   const [recognitionBackoffTime, setRecognitionBackoffTime] = useState(0);
   const [networkRetryCount, setNetworkRetryCount] = useState(0);
 
-  // Speech-to-text state using Hugging Face Whisper model
-  const [isProcessingSpeech, setIsProcessingSpeech] = useState(false);
-
-  // Function to initialize speech recognition with Whisper model
-  const initializeSpeechRecognition = async () => {
-    try {
-      setSpeechError(null);
-
-      // Dynamically import the speech recognition module
-      const speechModule = await loadSpeechRecognition();
-
-      if (!speechModule) {
-        setSpeechToTextEnabled(false);
-        setSpeechError("Failed to load speech recognition module.");
-        return;
-      }
-
-      const isSupported = speechModule.isSpeechToTextSupported();
-
-      if (!isSupported) {
-        setSpeechToTextEnabled(false);
-        setSpeechError("Speech recognition is not supported in your browser.");
-        return;
-      }
-
-      // Initialize the Whisper model
-      await speechModule.initSpeechToText();
-      setSpeechToTextEnabled(true);
-      console.log("Speech recognition initialized successfully");
-    } catch (error) {
-      console.error("Error initializing speech recognition:", error);
-      setSpeechError(`Error initializing speech recognition: ${error.message}`);
-      setSpeechToTextEnabled(false);
-    }
-  };
-
   // Function to start listening with SpeechRecorder component
   const startListening = () => {
     if (!speechToTextEnabled) return;
@@ -106,14 +51,11 @@ const InterviewSessionPage = () => {
     }));
   };
 
-  // Handle transcription from Whisper model
+  // Handle transcription from model service
   const handleTranscriptionComplete = (text) => {
     if (!text) return;
-
-    // Get current answer and append the transcription
     const currentAnswer = answers[currentQuestionIndex] || "";
     const newAnswer = currentAnswer ? `${currentAnswer} ${text}` : text;
-
     handleAnswerChange(newAnswer);
   };
 
@@ -788,7 +730,7 @@ const InterviewSessionPage = () => {
                   placeholder="Type your answer here..."
                 />
 
-                {/* Whisper-based Speech-to-Text Component */}
+                {/* Speech-to-Text Component (calls model service) */}
                 <div className="mt-4 flex justify-center">
                   <SpeechRecorder
                     onTranscriptionComplete={handleTranscriptionComplete}
@@ -800,13 +742,9 @@ const InterviewSessionPage = () => {
                   <div className="flex items-center space-x-4">
                     <p className="text-xs text-gray-500">
                       💡 Use the microphone button to record your answer with
-                      Whisper AI speech recognition
+                      speech recognition
                     </p>
-                    {isProcessingSpeech && (
-                      <span className="text-xs text-blue-600 animate-pulse">
-                        🎙️ Processing speech...
-                      </span>
-                    )}
+                    {/* Optionally add a processing indicator if needed */}
                   </div>
                   {answers[currentQuestionIndex]?.trim() && (
                     <div className="text-xs text-gray-500">
