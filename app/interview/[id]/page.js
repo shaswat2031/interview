@@ -42,6 +42,17 @@ const InterviewSessionPage = () => {
     console.log(
       "Speech recognition is ready - click the Start Speaking button to begin"
     );
+    // Initialize Speech Recognition utility
+    function initializeSpeechRecognition() {
+      if (typeof window === "undefined") return null;
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn("Speech recognition is not supported in this browser.");
+        return null;
+      }
+      return new SpeechRecognition();
+    }
   };
 
   const handleAnswerChange = (value) => {
@@ -631,6 +642,28 @@ const InterviewSessionPage = () => {
                     >
                       🔊 Read Answer
                     </button>
+                    {/* Microphone button for speech-to-text */}
+                    <span className="relative">
+                      <button
+                        onClick={() => {
+                          // Focus the SpeechRecorder below (simulate click if needed)
+                          const mic = document.getElementById("speech-mic-btn");
+                          if (mic) mic.click();
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 px-2 py-1 rounded-full border border-blue-200 bg-blue-50 flex items-center"
+                        title="Record your answer with your voice"
+                        type="button"
+                      >
+                        <svg
+                          className="w-5 h-5 mr-1"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M10 2a2 2 0 00-2 2v6a2 2 0 104 0V4a2 2 0 00-2-2zm-6 8a6 6 0 0012 0h-2a4 4 0 01-8 0H4zm6 8a8 8 0 01-8-8h2a6 6 0 0012 0h2a8 8 0 01-8 8z" />
+                        </svg>
+                        <span>Mic</span>
+                      </button>
+                    </span>
                     <span className="text-xs text-gray-500">
                       {answers[currentQuestionIndex]?.length || 0} characters
                     </span>
@@ -735,6 +768,7 @@ const InterviewSessionPage = () => {
                   <SpeechRecorder
                     onTranscriptionComplete={handleTranscriptionComplete}
                     isDisabled={!sessionStarted || sessionEnded}
+                    micButtonId="speech-mic-btn"
                   />
                 </div>
 
